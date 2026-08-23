@@ -19,8 +19,8 @@ import { useUiStore } from '../stores/ui'
 const ui = useUiStore()
 
 const crud = useCrudTable<AcademicYear>({
-  resource: 'academicYears',
   itemLabel: 'Tahun ajaran',
+  listFn: (p) => masterDataService.academicYears.list(p),
   createFn: (p) => masterDataService.academicYears.create(p as never),
   updateFn: (id, p) => masterDataService.academicYears.update(id, p as never),
   removeFn: (id) => masterDataService.academicYears.remove(id),
@@ -120,8 +120,8 @@ async function activate(ay: AcademicYear) {
 
       <BaseModal :open="crud.formOpen.value" :title="crud.isEditing.value ? 'Edit Tahun Ajaran' : 'Tambah Tahun Ajaran'" @close="crud.closeForm()">
         <form class="space-y-4" @submit.prevent="crud.submit()">
-          <BaseInput v-model="crud.form.value.year" label="Tahun (YYYY/YYYY)" placeholder="2025/2026" :error="crud.fieldErrors.value.year" />
-          <BaseSelect v-model="crud.form.value.semester" label="Semester" :options="semesterOptions" :error="crud.fieldErrors.value.semester" />
+          <BaseInput v-model="crud.form.value.year" label="Tahun (YYYY/YYYY)" placeholder="2025/2026" required :error="crud.fieldErrors.value.year" />
+          <BaseSelect v-model="crud.form.value.semester" label="Semester" :options="semesterOptions" required :error="crud.fieldErrors.value.semester" />
           <div class="flex justify-end gap-2 pt-2">
             <BaseButton variant="outline" type="button" @click="crud.closeForm()">Batal</BaseButton>
             <BaseButton type="submit" :loading="crud.saving.value">Simpan</BaseButton>

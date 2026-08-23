@@ -60,6 +60,15 @@ func (r *ClassRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Cl
 	return &c, nil
 }
 
+func (r *ClassRepository) ListAll(ctx context.Context) ([]model.Class, error) {
+	var classes []model.Class
+	err := r.db.WithContext(ctx).
+		Preload("AcademicYear").
+		Order("name ASC").
+		Find(&classes).Error
+	return classes, err
+}
+
 func (r *ClassRepository) ExistsDuplicate(ctx context.Context, academicYearID uuid.UUID, name string, excludeID *uuid.UUID) (bool, error) {
 	q := r.db.WithContext(ctx).Model(&model.Class{}).
 		Where("academic_year_id = ? AND name = ?", academicYearID, name)

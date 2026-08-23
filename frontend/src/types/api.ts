@@ -28,6 +28,7 @@ export interface MeResponseData {
   id: string
   name: string
   username: string
+  email: string
   roles: string[]
 }
 
@@ -62,9 +63,41 @@ export interface Subject {
   description: string | null
 }
 
+export interface Teacher {
+  id: string
+  user_id: string
+  nip: string | null
+  phone: string | null
+  address: string | null
+  user?: Pick<User, 'id' | 'username' | 'name' | 'email'>
+}
+
+export interface Student {
+  id: string
+  user_id: string
+  nis: string
+  class_id: string | null
+  phone: string | null
+  address: string | null
+  user?: Pick<User, 'id' | 'username' | 'name' | 'email'>
+  class?: SchoolClass | null
+}
+
+export interface ImportRowError {
+  row: number
+  field: string
+  reason: string
+}
+
+export interface ImportResult {
+  imported_count: number
+  skipped: ImportRowError[]
+}
+
 export interface User {
   id: string
   username: string
   name: string
+  email: string
   roles: string[]
 }

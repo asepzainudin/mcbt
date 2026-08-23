@@ -42,6 +42,18 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/teachers',
+      name: 'teachers',
+      component: () => import('../pages/TeachersPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/students',
+      name: 'students',
+      component: () => import('../pages/StudentsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),

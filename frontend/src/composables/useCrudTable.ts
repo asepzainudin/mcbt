@@ -2,15 +2,22 @@ import { computed, onMounted, ref, watch, type ComputedRef } from 'vue'
 import type { AxiosError } from 'axios'
 
 import { apiErrorMessage, extractFieldErrors } from '../lib/axios'
-import { masterDataService, type ListParams } from '../services/master-data.service'
 import { useUiStore } from '../stores/ui'
 import type { PaginationMeta } from '../types/api'
 
+export interface CrudListParams {
+  page?: number
+  limit?: number
+  search?: string
+}
+
 export interface CrudConfig<T> {
-  resource: string
   itemLabel: string
   defaultLimit?: number
-  extraParams?: ComputedRef<ListParams>
+  extraParams?: ComputedRef<Record<string, string | number | undefined>>
+  listFn: (
+    params: CrudListParams,
+  ) => Promise<{ data: T[]; meta: PaginationMeta | null }>
   createFn: (payload: Record<string, unknown>) => Promise<T>
   updateFn: (id: string, payload: Record<string, unknown>) => Promise<T>
   removeFn: (id: string) => Promise<void>
@@ -43,17 +50,13 @@ export function useCrudTable<T extends { id: string }>(config: CrudConfig<T>) {
   const fetchList = async () => {
     loading.value = true
     try {
-      const svc = masterDataService as unknown as Record<
-        string,
-        { list: (p: ListParams) => Promise<{ data: T[]; meta: PaginationMeta | null }> }
-      >
-      const params: ListParams = {
+      const params: CrudListParams = {
         page: page.value,
         limit: limit.value,
         search: search.value,
         ...(config.extraParams?.value ?? {}),
       }
-      const result = await svc[config.resource].list(params)
+      const result = await config.listFn(params)
       items.value = result.data
       meta.value = result.meta
     } catch {

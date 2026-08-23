@@ -14,12 +14,14 @@ interface Props {
   label?: string
   options: SelectOption[]
   error?: string
+  required?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
   label: '',
   error: '',
+  required: false,
 })
 
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>()
@@ -32,12 +34,21 @@ const hasError = computed(() => props.error !== '')
   <div class="space-y-1.5">
     <label v-if="label" :for="selectId" class="text-sm font-medium leading-none text-foreground">
       {{ label }}
+      <span
+        v-if="required"
+        class="text-destructive"
+        title="Wajib diisi"
+        aria-hidden="true"
+      >
+        *
+      </span>
     </label>
     <div class="relative">
       <select
         :id="selectId"
         :value="modelValue"
         :aria-invalid="hasError"
+        :aria-required="required"
         :class="
           cn(
             'flex h-9 w-full appearance-none rounded-lg border border-input bg-transparent px-3 py-1 pr-9 text-sm shadow-sm',

@@ -13,6 +13,7 @@ import {
   CalendarDays,
   DoorOpen,
   BookOpen,
+  Users,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -42,6 +43,8 @@ const masterDataItems = computed(() => {
     { to: '/academic-years', label: 'Tahun Ajaran', icon: CalendarDays },
     { to: '/classes', label: 'Kelas', icon: DoorOpen },
     { to: '/subjects', label: 'Mata Pelajaran', icon: BookOpen },
+    { to: '/teachers', label: 'Guru', icon: Users },
+    { to: '/students', label: 'Siswa', icon: GraduationCap },
   ]
 })
 

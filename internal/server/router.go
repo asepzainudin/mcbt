@@ -50,6 +50,15 @@ func NewRouter(d RouterDeps) *gin.Engine {
 	classHandler := handler.NewClassHandler(usecase.NewClassUsecase(classRepo, ayRepo))
 	subjectHandler := handler.NewSubjectHandler(usecase.NewSubjectUsecase(subjectRepo))
 
+	teacherUsecase := usecase.NewTeacherUsecase(
+		repository.NewTeacherRepository(d.DB), roles,
+	)
+	studentUsecase := usecase.NewStudentUsecase(
+		repository.NewStudentRepository(d.DB), roles, classRepo,
+	)
+	teacherHandler := handler.NewTeacherHandler(teacherUsecase)
+	studentHandler := handler.NewStudentHandler(studentUsecase)
+
 	r.Use(middleware.RequestID())
 	r.Use(middleware.RequestLogger(d.Log))
 	r.Use(middleware.Recovery(d.Log))
@@ -92,6 +101,24 @@ func NewRouter(d RouterDeps) *gin.Engine {
 			adminOnly.POST("/subjects", subjectHandler.Create)
 			adminOnly.PUT("/subjects/:id", subjectHandler.Update)
 			adminOnly.DELETE("/subjects/:id", subjectHandler.Delete)
+
+			adminOnly.GET("/teachers", teacherHandler.List)
+			adminOnly.GET("/teachers/import/template", teacherHandler.Template)
+			adminOnly.POST("/teachers/import", teacherHandler.Import)
+			adminOnly.GET("/teachers/:id", teacherHandler.Get)
+			adminOnly.POST("/teachers", teacherHandler.Create)
+			adminOnly.PUT("/teachers/:id", teacherHandler.Update)
+			adminOnly.DELETE("/teachers/:id", teacherHandler.Delete)
+
+			adminOnly.GET("/students", studentHandler.List)
+			adminOnly.GET("/students/import/template", studentHandler.Template)
+			adminOnly.POST("/students/import", studentHandler.Import)
+			adminOnly.POST("/students/:id/change-class", studentHandler.ChangeClass)
+			adminOnly.POST("/students/:id/reset-password", studentHandler.ResetPassword)
+			adminOnly.GET("/students/:id", studentHandler.Get)
+			adminOnly.POST("/students", studentHandler.Create)
+			adminOnly.PUT("/students/:id", studentHandler.Update)
+			adminOnly.DELETE("/students/:id", studentHandler.Delete)
 		}
 	}
 

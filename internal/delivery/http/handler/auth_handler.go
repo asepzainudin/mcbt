@@ -105,6 +105,7 @@ func (h *AuthHandler) Me(c *gin.Context) {
 		"id":       user.ID,
 		"name":     user.Name,
 		"username": user.Username,
+		"email":    user.Email,
 		"roles":    roleNames(user.Roles),
 	})
 }

@@ -114,22 +114,24 @@ const highlights = [
             {{ formError }}
           </p>
 
-          <BaseInput
-            v-model="username"
-            label="Username"
-            placeholder="username atau email"
-            autocomplete="username"
-            :error="errors.username"
-          />
+        <BaseInput
+          v-model="username"
+          label="Username"
+          placeholder="username atau email"
+          autocomplete="username"
+          required
+          :error="errors.username"
+        />
 
-          <BaseInput
-            v-model="password"
-            type="password"
-            label="Password"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            :error="errors.password"
-          />
+        <BaseInput
+          v-model="password"
+          type="password"
+          label="Password"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+          :error="errors.password"
+        />
 
           <BaseButton type="submit" block :loading="auth.loading" size="lg">Masuk</BaseButton>
         </form>

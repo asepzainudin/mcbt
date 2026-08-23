@@ -14,8 +14,8 @@ import { masterDataService } from '../services/master-data.service'
 import type { Subject } from '../types/api'
 
 const crud = useCrudTable<Subject>({
-  resource: 'subjects',
   itemLabel: 'Mapel',
+  listFn: (p) => masterDataService.subjects.list(p),
   createFn: (p) => masterDataService.subjects.create(p as never),
   updateFn: (id, p) => masterDataService.subjects.update(id, p as never),
   removeFn: (id) => masterDataService.subjects.remove(id),
@@ -103,8 +103,8 @@ const crud = useCrudTable<Subject>({
 
       <BaseModal :open="crud.formOpen.value" :title="crud.isEditing.value ? 'Edit Mapel' : 'Tambah Mapel'" @close="crud.closeForm()">
         <form class="space-y-4" @submit.prevent="crud.submit()">
-          <BaseInput v-model="crud.form.value.code" label="Kode" placeholder="MTK-X" :error="crud.fieldErrors.value.code" />
-          <BaseInput v-model="crud.form.value.name" label="Nama Mapel" placeholder="Matematika" :error="crud.fieldErrors.value.name" />
+          <BaseInput v-model="crud.form.value.code" label="Kode" placeholder="MTK-X" required :error="crud.fieldErrors.value.code" />
+          <BaseInput v-model="crud.form.value.name" label="Nama Mapel" placeholder="Matematika" required :error="crud.fieldErrors.value.name" />
           <BaseInput
             v-model="crud.form.value.description"
             label="Deskripsi (opsional)"

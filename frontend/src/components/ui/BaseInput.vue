@@ -11,6 +11,7 @@ interface Props {
   placeholder?: string
   error?: string
   autocomplete?: string
+  required?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<Props>(), {
   placeholder: '',
   error: '',
   autocomplete: 'off',
+  required: false,
 })
 
 const emit = defineEmits<{ (e: 'update:modelValue', value: string): void }>()
@@ -37,6 +39,14 @@ const effectiveType = computed(() =>
   <div class="space-y-1.5">
     <label v-if="label" :for="inputId" class="text-sm font-medium leading-none text-foreground">
       {{ label }}
+      <span
+        v-if="required"
+        class="text-destructive"
+        title="Wajib diisi"
+        aria-hidden="true"
+      >
+        *
+      </span>
     </label>
     <div class="relative">
       <input
@@ -46,6 +56,7 @@ const effectiveType = computed(() =>
         :placeholder="placeholder"
         :autocomplete="autocomplete"
         :aria-invalid="hasError"
+        :aria-required="required"
         :class="
           cn(
             'flex h-9 w-full rounded-lg border border-input bg-transparent px-3 py-1 text-sm shadow-sm',

@@ -59,6 +59,15 @@ func (r *RoleRepository) FindByIDs(ctx context.Context, ids []uuid.UUID) ([]mode
 	return roles, err
 }
 
+func (r *RoleRepository) FindByName(ctx context.Context, name string) (*model.Role, error) {
+	var role model.Role
+	err := r.db.WithContext(ctx).First(&role, "name = ?", name).Error
+	if err != nil {
+		return nil, err
+	}
+	return &role, nil
+}
+
 func (r *RoleRepository) ReplaceUserRoles(ctx context.Context, userID uuid.UUID, roleIDs []uuid.UUID) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Where("user_id = ?", userID).Delete(&model.UserRole{}).Error; err != nil {

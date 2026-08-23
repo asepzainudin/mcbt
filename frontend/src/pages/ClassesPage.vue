@@ -36,9 +36,9 @@ const extraParams = computed(() => ({
 }))
 
 const crud = useCrudTable<SchoolClass>({
-  resource: 'classes',
   itemLabel: 'Kelas',
   extraParams,
+  listFn: (p) => masterDataService.classes.list(p),
   createFn: (p) => masterDataService.classes.create(p as never),
   updateFn: (id, p) => masterDataService.classes.update(id, p as never),
   removeFn: (id) => masterDataService.classes.remove(id),
@@ -132,11 +132,12 @@ watch(yearFilter, () => {
 
       <BaseModal :open="crud.formOpen.value" :title="crud.isEditing.value ? 'Edit Kelas' : 'Tambah Kelas'" @close="crud.closeForm()">
         <form class="space-y-4" @submit.prevent="crud.submit()">
-          <BaseInput v-model="crud.form.value.name" label="Nama Kelas" placeholder="XII IPA 1" :error="crud.fieldErrors.value.name" />
+          <BaseInput v-model="crud.form.value.name" label="Nama Kelas" placeholder="XII IPA 1" required :error="crud.fieldErrors.value.name" />
           <BaseSelect
             v-model="crud.form.value.academic_year_id"
             label="Tahun Ajaran"
             :options="yearOptions.slice(1)"
+            required
             :error="crud.fieldErrors.value.academic_year_id"
           />
           <div class="flex justify-end gap-2 pt-2">

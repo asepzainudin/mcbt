@@ -126,15 +126,19 @@ func validationDetails(errs validator.ValidationErrors) map[string]string {
 
 func toSnakeCase(s string) string {
 	var b strings.Builder
-	for i, r := range s {
-		if unicode.IsUpper(r) {
-			if i > 0 {
-				b.WriteByte('_')
-			}
-			b.WriteRune(unicode.ToLower(r))
-		} else {
+	runes := []rune(s)
+	for i, r := range runes {
+		if !unicode.IsUpper(r) {
 			b.WriteRune(r)
+			continue
 		}
+		prevLower := i > 0 && unicode.IsLower(runes[i-1])
+		prevUpper := i > 0 && unicode.IsUpper(runes[i-1])
+		nextLower := i+1 < len(runes) && unicode.IsLower(runes[i+1])
+		if i > 0 && (prevLower || (prevUpper && nextLower)) {
+			b.WriteByte('_')
+		}
+		b.WriteRune(unicode.ToLower(r))
 	}
 	return b.String()
 }
