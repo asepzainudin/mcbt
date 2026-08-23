@@ -21,6 +21,13 @@ type Config struct {
 
 	LogLevel string
 	EnvFile  string
+
+	JWTSecret     string
+	JWTAccessTTL  time.Duration
+	JWTRefreshTTL time.Duration
+
+	CookieSecure   bool
+	CookieSameSite string
 }
 
 type DBCfg struct {
@@ -56,12 +63,17 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		AppName:  getEnv("APP_NAME", "mcbt"),
-		AppEnv:   getEnv("APP_ENV", "development"),
-		AppHost:  getEnv("APP_HOST", "localhost"),
-		AppPort:  getEnv("APP_PORT", "8080"),
-		LogLevel: getEnv("LOG_LEVEL", "info"),
-		EnvFile:  envPath,
+		AppName:        getEnv("APP_NAME", "mcbt"),
+		AppEnv:         getEnv("APP_ENV", "development"),
+		AppHost:        getEnv("APP_HOST", "localhost"),
+		AppPort:        getEnv("APP_PORT", "8080"),
+		LogLevel:       getEnv("LOG_LEVEL", "info"),
+		EnvFile:        envPath,
+		JWTSecret:      getEnv("JWT_SECRET", ""),
+		JWTAccessTTL:   getEnvDuration("JWT_ACCESS_TTL_MINUTES", 15, time.Minute),
+		JWTRefreshTTL:  getEnvDuration("JWT_REFRESH_TTL_DAYS", 7, 24*time.Hour),
+		CookieSecure:   getEnvBool("COOKIE_SECURE", false),
+		CookieSameSite: getEnv("COOKIE_SAMESITE", "strict"),
 		DB: DBCfg{
 			Host:                getEnv("DB_HOST", "localhost"),
 			Port:                getEnv("DB_PORT", "5432"),
@@ -74,7 +86,23 @@ func Load() (*Config, error) {
 			ConnMaxLifetimeMins: getEnvInt("DB_CONN_MAX_LIFETIME_MINUTES", 5),
 		},
 	}
+	if err := cfg.validate(); err != nil {
+		return nil, err
+	}
 	return cfg, nil
+}
+
+func (c *Config) validate() error {
+	if strings.TrimSpace(c.JWTSecret) == "" {
+		return errors.New("JWT_SECRET is required: generate one with `openssl rand -hex 32`")
+	}
+	if len(c.JWTSecret) < 32 {
+		return errors.New("JWT_SECRET must be at least 32 characters")
+	}
+	if c.IsProduction() && !c.CookieSecure {
+		return errors.New("COOKIE_SECURE must be true when APP_ENV=production")
+	}
+	return nil
 }
 
 func (c *Config) IsProduction() bool {
@@ -179,4 +207,23 @@ func getEnvInt(key string, fallback int) int {
 		return fallback
 	}
 	return n
+}
+
+func getEnvBool(key string, fallback bool) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
+}
+
+func getEnvDuration(key string, fallback int64, unit time.Duration) time.Duration {
+	n := int64(getEnvInt(key, int(fallback)))
+	if n <= 0 {
+		n = fallback
+	}
+	return time.Duration(n) * unit
 }

@@ -8,8 +8,10 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/config"
 	"github.com/asepzainudin14/mcbt/internal/delivery/http/handler"
-	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
+	jwtmanager "github.com/asepzainudin14/mcbt/internal/pkg/jwt"
+	"github.com/asepzainudin14/mcbt/internal/repository"
 	middleware "github.com/asepzainudin14/mcbt/internal/server/middleware"
+	"github.com/asepzainudin14/mcbt/internal/usecase"
 )
 
 type RouterDeps struct {
@@ -26,22 +28,49 @@ func NewRouter(d RouterDeps) *gin.Engine {
 	r := gin.New()
 	r.MaxMultipartMemory = 8 << 20
 
+	users := repository.NewUserRepository(d.DB)
+	roles := repository.NewRoleRepository(d.DB)
+
+	tokens := jwtmanager.NewManager(
+		d.Cfg.JWTSecret,
+		d.Cfg.JWTAccessTTL,
+		d.Cfg.JWTRefreshTTL,
+	)
+	authUC := usecase.NewAuthUsecase(users, tokens)
+	roleUC := usecase.NewRoleUsecase(roles, users)
+
+	cookies := handler.NewCookieManager(d.Cfg)
+	authHandler := handler.NewAuthHandler(authUC, cookies)
+	roleHandler := handler.NewRoleHandler(roleUC)
+
 	r.Use(middleware.RequestID())
 	r.Use(middleware.RequestLogger(d.Log))
 	r.Use(middleware.Recovery(d.Log))
 	r.Use(middleware.ErrorHandler(d.Log))
+	r.Use(middleware.CSRFProtection(d.Log))
 
 	v1 := r.Group("/api/v1")
-	registerHealthRoutes(v1)
 
-	r.NoRoute(func(c *gin.Context) {
-		c.Error(apperror.NotFound("Route not found", nil))
-	})
+	auth := v1.Group("/auth")
+	{
+		auth.POST("/login", authHandler.Login)
+		auth.POST("/logout", authHandler.Logout)
+		auth.POST("/refresh-token", authHandler.RefreshToken)
+	}
+
+	v1.GET("/health", handler.NewHealthHandler().Health)
+
+	protected := v1.Group("", middleware.Authenticate(d.Log, tokens, users))
+	{
+		protected.GET("/auth/me", authHandler.Me)
+		protected.PUT("/auth/change-password", authHandler.ChangePassword)
+
+		adminOnly := protected.Group("", middleware.RequireRoles("admin"))
+		{
+			adminOnly.GET("/roles", roleHandler.List)
+			adminOnly.POST("/roles/assign", roleHandler.Assign)
+		}
+	}
 
 	return r
-}
-
-func registerHealthRoutes(rg *gin.RouterGroup) {
-	h := handler.NewHealthHandler()
-	rg.GET("/health", h.Health)
 }
