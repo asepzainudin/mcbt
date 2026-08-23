@@ -32,6 +32,18 @@ func run() error {
 	log := logger.New(cfg.AppName, cfg.AppEnv, cfg.LogLevel)
 	slog.SetDefault(log)
 
+	if cfg.EnvFile != "" {
+		log.Info("config loaded", slog.String("env_file", cfg.EnvFile))
+	} else {
+		log.Warn("no .env file found, using OS environment variables")
+	}
+	log.Info("database config",
+		slog.String("host", cfg.DB.Host),
+		slog.String("port", cfg.DB.Port),
+		slog.String("name", cfg.DB.Name),
+		slog.String("user", cfg.DB.User),
+	)
+
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
