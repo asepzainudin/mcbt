@@ -36,6 +36,32 @@ export interface RoleItem {
   code: string
 }
 
+export type Semester = 'ODD' | 'EVEN'
+
+export interface AcademicYear {
+  id: string
+  year: string
+  semester: Semester
+  start_date: string | null
+  end_date: string | null
+  is_active: boolean
+}
+
+export interface SchoolClass {
+  id: string
+  name: string
+  grade_level: number | null
+  academic_year_id: string
+  academic_year?: AcademicYear
+}
+
+export interface Subject {
+  id: string
+  code: string
+  name: string
+  description: string | null
+}
+
 export interface User {
   id: string
   username: string

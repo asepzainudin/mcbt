@@ -24,6 +24,24 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/academic-years',
+      name: 'academic-years',
+      component: () => import('../pages/AcademicYearsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/classes',
+      name: 'classes',
+      component: () => import('../pages/ClassesPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/subjects',
+      name: 'subjects',
+      component: () => import('../pages/SubjectsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),

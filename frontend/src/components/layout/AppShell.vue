@@ -10,6 +10,9 @@ import {
   Sun,
   Menu,
   X,
+  CalendarDays,
+  DoorOpen,
+  BookOpen,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -31,6 +34,15 @@ const navItems = computed(() => {
     items.push({ to: '/roles', label: 'Roles', icon: ShieldCheck })
   }
   return items
+})
+
+const masterDataItems = computed(() => {
+  if (!auth.user?.roles.includes('admin')) return []
+  return [
+    { to: '/academic-years', label: 'Tahun Ajaran', icon: CalendarDays },
+    { to: '/classes', label: 'Kelas', icon: DoorOpen },
+    { to: '/subjects', label: 'Mata Pelajaran', icon: BookOpen },
+  ]
 })
 
 const initials = computed(() => {
@@ -83,7 +95,7 @@ function closeSidebar() {
         </button>
       </div>
 
-      <nav class="flex-1 space-y-1 p-3">
+      <nav class="flex-1 space-y-1 overflow-y-auto p-3">
         <router-link
           v-for="item in navItems"
           :key="item.to"
@@ -99,6 +111,27 @@ function closeSidebar() {
           <component :is="item.icon" />
           {{ item.label }}
         </router-link>
+
+        <template v-if="masterDataItems.length > 0">
+          <p class="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+            Master Data
+          </p>
+          <router-link
+            v-for="item in masterDataItems"
+            :key="item.to"
+            :to="item.to"
+            :class="[
+              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors [&_svg]:size-4',
+              route.path === item.to
+                ? 'bg-primary/10 text-primary'
+                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+            ]"
+            @click="closeSidebar"
+          >
+            <component :is="item.icon" />
+            {{ item.label }}
+          </router-link>
+        </template>
       </nav>
 
       <div class="border-t border-border p-3">

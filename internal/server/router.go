@@ -39,9 +39,16 @@ func NewRouter(d RouterDeps) *gin.Engine {
 	authUC := usecase.NewAuthUsecase(users, tokens)
 	roleUC := usecase.NewRoleUsecase(roles, users)
 
+	ayRepo := repository.NewAcademicYearRepository(d.DB)
+	classRepo := repository.NewClassRepository(d.DB)
+	subjectRepo := repository.NewSubjectRepository(d.DB)
+
 	cookies := handler.NewCookieManager(d.Cfg)
 	authHandler := handler.NewAuthHandler(authUC, cookies)
 	roleHandler := handler.NewRoleHandler(roleUC)
+	ayHandler := handler.NewAcademicYearHandler(usecase.NewAcademicYearUsecase(ayRepo))
+	classHandler := handler.NewClassHandler(usecase.NewClassUsecase(classRepo, ayRepo))
+	subjectHandler := handler.NewSubjectHandler(usecase.NewSubjectUsecase(subjectRepo))
 
 	r.Use(middleware.RequestID())
 	r.Use(middleware.RequestLogger(d.Log))
@@ -69,6 +76,22 @@ func NewRouter(d RouterDeps) *gin.Engine {
 		{
 			adminOnly.GET("/roles", roleHandler.List)
 			adminOnly.POST("/roles/assign", roleHandler.Assign)
+
+			adminOnly.GET("/academic-years", ayHandler.List)
+			adminOnly.POST("/academic-years", ayHandler.Create)
+			adminOnly.PUT("/academic-years/:id", ayHandler.Update)
+			adminOnly.PATCH("/academic-years/:id/activate", ayHandler.Activate)
+			adminOnly.DELETE("/academic-years/:id", ayHandler.Delete)
+
+			adminOnly.GET("/classes", classHandler.List)
+			adminOnly.POST("/classes", classHandler.Create)
+			adminOnly.PUT("/classes/:id", classHandler.Update)
+			adminOnly.DELETE("/classes/:id", classHandler.Delete)
+
+			adminOnly.GET("/subjects", subjectHandler.List)
+			adminOnly.POST("/subjects", subjectHandler.Create)
+			adminOnly.PUT("/subjects/:id", subjectHandler.Update)
+			adminOnly.DELETE("/subjects/:id", subjectHandler.Delete)
 		}
 	}
 

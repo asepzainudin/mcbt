@@ -30,11 +30,6 @@ func (h *RoleHandler) List(c *gin.Context) {
 		return
 	}
 
-	totalPages := int64(0)
-	if limit > 0 {
-		totalPages = (total + int64(limit) - 1) / int64(limit)
-	}
-
 	data := make([]gin.H, 0, len(roles))
 	for _, r := range roles {
 		data = append(data, gin.H{
@@ -43,12 +38,7 @@ func (h *RoleHandler) List(c *gin.Context) {
 		})
 	}
 
-	response.SuccessWithMeta(c, http.StatusOK, "Roles retrieved", data, response.Meta{
-		"page":        page,
-		"limit":       limit,
-		"total_items": total,
-		"total_pages": totalPages,
-	})
+	response.SuccessWithMeta(c, http.StatusOK, "Roles retrieved", data, paginationMeta(page, limit, total))
 }
 
 type assignRolesRequest struct {
