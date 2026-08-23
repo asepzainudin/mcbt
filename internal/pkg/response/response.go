@@ -31,9 +31,9 @@ func SuccessWithMeta(c *gin.Context, status int, message string, data any, meta 
 }
 
 type ErrorBody struct {
-	Success bool   `json:"success"`
-	Message string `json:"message"`
-	Error   string `json:"error,omitempty"`
+	Success bool              `json:"success"`
+	Message string            `json:"message"`
+	Errors  map[string]string `json:"errors,omitempty"`
 }
 
 func Error(c *gin.Context, status int, message string) {

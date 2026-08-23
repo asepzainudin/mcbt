@@ -7,6 +7,8 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strings"
+	"unicode"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
@@ -47,10 +49,15 @@ func ErrorHandler(log *slog.Logger) gin.HandlerFunc {
 			log.Warn("request_error", logAttrs...)
 		}
 
-		c.AbortWithStatusJSON(appErr.Code, response.ErrorBody{
+		body := response.ErrorBody{
 			Success: false,
 			Message: appErr.Message,
-		})
+		}
+		if len(appErr.Details) > 0 {
+			body.Errors = appErr.Details
+		}
+
+		c.AbortWithStatusJSON(appErr.Code, body)
 	}
 }
 
@@ -79,7 +86,12 @@ func Recovery(log *slog.Logger) gin.HandlerFunc {
 func mapUnknownError(err error) *apperror.AppError {
 	var validationErrs validator.ValidationErrors
 	if errors.As(err, &validationErrs) {
-		return apperror.Unprocessable("Validation failed", err)
+		return &apperror.AppError{
+			Code:    apperror.CodeUnprocessable,
+			Message: "Validation failed",
+			Err:     err,
+			Details: validationDetails(validationErrs),
+		}
 	}
 
 	var syntaxErr *json.SyntaxError
@@ -90,4 +102,39 @@ func mapUnknownError(err error) *apperror.AppError {
 	}
 
 	return apperror.Internal(err)
+}
+
+func validationDetails(errs validator.ValidationErrors) map[string]string {
+	details := make(map[string]string, len(errs))
+	for _, fe := range errs {
+		field := toSnakeCase(fe.Field())
+		switch fe.Tag() {
+		case "required":
+			details[field] = field + " wajib diisi"
+		case "min":
+			details[field] = field + " minimal " + fe.Param() + " karakter"
+		case "max":
+			details[field] = field + " maksimal " + fe.Param() + " karakter"
+		case "uuid":
+			details[field] = field + " harus berupa UUID yang valid"
+		default:
+			details[field] = field + " tidak valid (" + fe.Tag() + ")"
+		}
+	}
+	return details
+}
+
+func toSnakeCase(s string) string {
+	var b strings.Builder
+	for i, r := range s {
+		if unicode.IsUpper(r) {
+			if i > 0 {
+				b.WriteByte('_')
+			}
+			b.WriteRune(unicode.ToLower(r))
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }

@@ -1,0 +1,62 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
+import { useUiStore } from '../stores/ui'
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('../pages/LoginPage.vue'),
+      meta: { public: true },
+    },
+    {
+      path: '/',
+      name: 'dashboard',
+      component: () => import('../pages/DashboardPage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/roles',
+      name: 'roles',
+      component: () => import('../pages/RolesPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: () => import('../pages/NotFoundPage.vue'),
+      meta: { public: true },
+    },
+  ],
+})
+
+let bootstrapped = false
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+
+  if (!bootstrapped && !to.meta.public) {
+    await auth.bootstrap()
+    bootstrapped = true
+  }
+
+  if (to.meta.requiresAuth && !auth.isAuthenticated) {
+    return { name: 'login', query: { redirect: to.fullPath } }
+  }
+
+  if (to.name === 'login' && auth.isAuthenticated) {
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresAdmin && !auth.user?.roles.includes('admin')) {
+    const ui = useUiStore()
+    ui.toastError('Halaman ini hanya untuk admin.')
+    return { name: 'dashboard' }
+  }
+
+  return true
+})
+
+export default router

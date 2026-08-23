@@ -16,9 +16,10 @@ const (
 )
 
 type AppError struct {
-	Code    int    `json:"-"`
-	Message string `json:"message"`
-	Err     error  `json:"-"`
+	Code    int               `json:"-"`
+	Message string            `json:"message"`
+	Err     error             `json:"-"`
+	Details map[string]string `json:"-"`
 }
 
 func (e *AppError) Error() string {
