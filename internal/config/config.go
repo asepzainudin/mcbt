@@ -2,8 +2,10 @@ package config
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -18,6 +20,7 @@ type Config struct {
 	DB DBCfg
 
 	LogLevel string
+	EnvFile  string
 }
 
 type DBCfg struct {
@@ -40,8 +43,16 @@ func (d DBCfg) DSN() string {
 }
 
 func Load() (*Config, error) {
-	if err := loadEnvFile(".env"); err != nil {
-		return nil, err
+	envPath, found := findEnvFile(".env")
+	if found {
+		if err := loadEnvFile(envPath); err != nil {
+			return nil, err
+		}
+	} else if !requiredEnvPresent() {
+		return nil, errors.New(
+			"no .env file found and required environment variables are not set: " +
+				"place .env in the project root or run from within the project directory",
+		)
 	}
 
 	cfg := &Config{
@@ -50,6 +61,7 @@ func Load() (*Config, error) {
 		AppHost:  getEnv("APP_HOST", "localhost"),
 		AppPort:  getEnv("APP_PORT", "8080"),
 		LogLevel: getEnv("LOG_LEVEL", "info"),
+		EnvFile:  envPath,
 		DB: DBCfg{
 			Host:                getEnv("DB_HOST", "localhost"),
 			Port:                getEnv("DB_PORT", "5432"),
@@ -73,12 +85,48 @@ func (c *Config) ConnMaxLifetime() time.Duration {
 	return time.Duration(c.DB.ConnMaxLifetimeMins) * time.Minute
 }
 
+func findEnvFile(name string) (string, bool) {
+	dir, err := os.Getwd()
+	if err != nil {
+		return "", false
+	}
+
+	for {
+		candidate := filepath.Join(dir, name)
+		if fileExists(candidate) {
+			return candidate, true
+		}
+
+		if fileExists(filepath.Join(dir, "go.mod")) {
+			return "", false
+		}
+
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			return "", false
+		}
+		dir = parent
+	}
+}
+
+func fileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && !info.IsDir()
+}
+
+func requiredEnvPresent() bool {
+	required := []string{"DB_HOST", "DB_PORT", "DB_USER", "DB_PASSWORD", "DB_NAME"}
+	for _, key := range required {
+		if strings.TrimSpace(os.Getenv(key)) == "" {
+			return false
+		}
+	}
+	return true
+}
+
 func loadEnvFile(path string) error {
 	f, err := os.Open(path)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
 		return fmt.Errorf("open %s: %w", path, err)
 	}
 	defer f.Close()
