@@ -138,6 +138,7 @@ func validationDetails(errs validator.ValidationErrors) map[string]string {
 }
 
 func toSnakeCase(s string) string {
+	s = strings.ReplaceAll(s, "IDs", "Ids")
 	var b strings.Builder
 	runes := []rune(s)
 	for i, r := range runes {

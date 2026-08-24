@@ -85,6 +85,17 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			repository.NewExamSectionRepository(d.DB), examRepo, bankRepo,
 		),
 	)
+	examScheduleHandler := handler.NewExamScheduleHandler(
+		usecase.NewExamScheduleUsecase(
+			repository.NewExamScheduleRepository(d.DB), examRepo,
+		),
+	)
+	examParticipantHandler := handler.NewExamParticipantHandler(
+		usecase.NewExamParticipantUsecase(
+			repository.NewExamParticipantRepository(d.DB), examRepo, classRepo,
+			repository.NewStudentRepository(d.DB),
+		),
+	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
 	)
@@ -190,6 +201,17 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.DELETE("/sections/:id", examSectionHandler.Delete)
 			adminOnly.GET("/sections/:id/questions", examSectionHandler.ListQuestions)
 			adminOnly.POST("/sections/:id/questions", examSectionHandler.MapQuestions)
+
+			adminOnly.POST("/exams/:id/schedules", examScheduleHandler.Create)
+			adminOnly.GET("/exams/:id/schedules", examScheduleHandler.GetByExam)
+			adminOnly.PUT("/schedules/:id", examScheduleHandler.Update)
+			adminOnly.DELETE("/schedules/:id", examScheduleHandler.Delete)
+			adminOnly.POST("/schedules/:id/generate-token", examScheduleHandler.GenerateToken)
+
+			adminOnly.GET("/exams/:id/participants", examParticipantHandler.List)
+			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)
+			adminOnly.POST("/exams/:id/participants/assign-individual", examParticipantHandler.AssignIndividual)
+			adminOnly.DELETE("/exams/:id/participants/:participant_id", examParticipantHandler.Remove)
 			adminOnly.DELETE("/sections/:id/questions/:question_id", examSectionHandler.RemoveQuestion)
 		}
 	}

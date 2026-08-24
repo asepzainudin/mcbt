@@ -260,3 +260,32 @@ export interface MapQuestionsPayload {
   question_bank_ids: string[]
   total_random_questions: number
 }
+
+export interface ExamSchedule {
+  id: string
+  exam_id: string
+  start_time: string
+  end_time: string
+  token: string
+}
+
+export interface SchedulePayload {
+  start_time: string
+  end_time: string
+  token?: string
+}
+
+export interface ExamParticipant {
+  id: string
+  exam_id: string
+  student_id: string
+  assigned_via: 'class' | 'individual'
+  nis: string
+  name: string
+  class_name: string | null
+}
+
+export interface AssignResult {
+  assigned: number
+  skipped: number
+}

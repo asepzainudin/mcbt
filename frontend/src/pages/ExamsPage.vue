@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Pencil,
+  CalendarClock,
   ListTree,
   Plus,
   Search,
@@ -224,6 +225,9 @@ async function saveSettings() {
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.passing_grade }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-end gap-1">
+                  <BaseButton variant="ghost" size="icon" title="Jadwal & Peserta" @click="router.push(`/exams/${e.id}/schedule`)">
+                    <CalendarClock />
+                  </BaseButton>
                   <BaseButton variant="ghost" size="icon" title="Sections" @click="router.push(`/exams/${e.id}/sections`)">
                     <ListTree />
                   </BaseButton>

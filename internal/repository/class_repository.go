@@ -106,3 +106,9 @@ func (r *ClassRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
+func (r *ClassRepository) ExistsByID(ctx context.Context, id uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.Class{}).Where("id = ?", id).Count(&count).Error
+	return count > 0, err
+}
