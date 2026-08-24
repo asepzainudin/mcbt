@@ -60,6 +60,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/exams/:id/sections',
+      name: 'exam-sections',
+      component: () => import('../pages/ExamSectionsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/question-banks',
       name: 'question-banks',
       component: () => import('../pages/QuestionBanksPage.vue'),

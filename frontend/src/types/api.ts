@@ -233,3 +233,30 @@ export interface ExamSettingsPayload {
   negative_value: number
   token_enabled: boolean
 }
+
+export interface ExamSection {
+  id: string
+  exam_id: string
+  name: string
+  sequence: number
+  question_count?: number
+}
+
+export interface SectionQuestion {
+  id: string
+  type: string
+  text: string
+  score_weight: number
+  answer_keys: string[]
+  question_bank_id: string
+}
+
+export interface SectionPayload {
+  name: string
+  sequence: number
+}
+
+export interface MapQuestionsPayload {
+  question_bank_ids: string[]
+  total_random_questions: number
+}

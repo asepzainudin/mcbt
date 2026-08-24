@@ -80,6 +80,11 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	examHandler := handler.NewExamHandler(
 		usecase.NewExamUsecase(examRepo, subjectRepo, ayRepo, bankRepo),
 	)
+	examSectionHandler := handler.NewExamSectionHandler(
+		usecase.NewExamSectionUsecase(
+			repository.NewExamSectionRepository(d.DB), examRepo, bankRepo,
+		),
+	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
 	)
@@ -177,6 +182,15 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.PUT("/exams/:id", examHandler.Update)
 			adminOnly.PUT("/exams/:id/settings", examHandler.UpdateSettings)
 			adminOnly.DELETE("/exams/:id", examHandler.Delete)
+
+			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)
+			adminOnly.POST("/exams/:id/sections", examSectionHandler.Create)
+
+			adminOnly.PUT("/sections/:id", examSectionHandler.Update)
+			adminOnly.DELETE("/sections/:id", examSectionHandler.Delete)
+			adminOnly.GET("/sections/:id/questions", examSectionHandler.ListQuestions)
+			adminOnly.POST("/sections/:id/questions", examSectionHandler.MapQuestions)
+			adminOnly.DELETE("/sections/:id/questions/:question_id", examSectionHandler.RemoveQuestion)
 		}
 	}
 
