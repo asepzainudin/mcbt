@@ -154,6 +154,8 @@ export interface Question {
   explanation: string | null
   answer_keys: string[]
   media_id: string | null
+  media_position: 'before' | 'after'
+  media?: MediaRef | null
   options?: QuestionOption[]
 }
 
@@ -169,6 +171,7 @@ export interface OptionPayload {
   option_key?: string
   text: string
   is_correct: boolean
+  media_id?: string | null
 }
 
 export interface QuestionPayload {
@@ -176,6 +179,8 @@ export interface QuestionPayload {
   text: string
   score_weight: number
   explanation?: string | null
+  media_id?: string | null
+  media_position?: 'before' | 'after'
   options?: OptionPayload[]
   answer_keys?: string[]
 }

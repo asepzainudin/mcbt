@@ -9,12 +9,20 @@ import type { ImportResult } from '../../types/api'
 
 interface Props {
   open: boolean
-  resource: 'teachers' | 'students'
   title: string
   templateUrl: string
+  /** contoh: '/teachers/import' — relatif terhadap /api/v1 */
+  uploadPath: string
+  /** field multipart tambahan (mis. question_bank_id) */
+  extraFields?: Record<string, string>
+  /** impor dua-fase: setelah upload mengembalikan import_token, POST ke path ini */
+  processPath?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  extraFields: undefined,
+  processPath: undefined,
+})
 const emit = defineEmits<{ (e: 'close'): void; (e: 'imported'): void }>()
 
 const file = ref<File | null>(null)
@@ -39,10 +47,18 @@ async function upload() {
   try {
     const form = new FormData()
     form.append('file', file.value)
-    const res = await api.post(`/api/v1/${props.resource}/import`, form, {
+    const upRes = await api.post(`/api/v1${props.uploadPath}`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
-    result.value = res.data.data as ImportResult
+
+    if (props.processPath) {
+      const token = (upRes.data?.data as { import_token?: string })?.import_token
+      if (!token) throw new Error('Token impor tidak diterima dari validasi.')
+      const procRes = await api.post(`/api/v1${props.processPath}`, { import_token: token })
+      result.value = procRes.data.data as ImportResult
+    } else {
+      result.value = upRes.data.data as ImportResult
+    }
     emit('imported')
   } catch (err) {
     error.value = apiErrorMessage(err, 'Gagal mengunggah file.')

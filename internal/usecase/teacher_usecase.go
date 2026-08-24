@@ -1,14 +1,11 @@
 package usecase
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
-	"github.com/xuri/excelize/v2"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 
@@ -128,17 +125,6 @@ func (u *TeacherUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	return u.repo.DeleteWithUser(ctx, teacher)
 }
 
-type ImportRowError struct {
-	Row    int    `json:"row"`
-	Field  string `json:"field"`
-	Reason string `json:"reason"`
-}
-
-type ImportResult struct {
-	ImportedCount int              `json:"imported_count"`
-	Skipped       []ImportRowError `json:"skipped"`
-}
-
 func (u *TeacherUsecase) Import(ctx context.Context, fileBytes []byte) (*ImportResult, error) {
 	rows, err := parseSheet(fileBytes, teacherTemplateColumns)
 	if err != nil {
@@ -217,110 +203,4 @@ func validateRequired(fields map[string]string) error {
 		}
 	}
 	return nil
-}
-
-func parseSheet(fileBytes []byte, columns []string) ([][]string, error) {
-	f, err := excelize.OpenReader(bytes.NewReader(fileBytes))
-	if err != nil {
-		return nil, fmt.Errorf("file Excel tidak dapat dibaca")
-	}
-	defer f.Close()
-
-	sheet := f.GetSheetList()[0]
-	tableRows, err := f.GetRows(sheet)
-	if err != nil {
-		return nil, fmt.Errorf("sheet kosong atau tidak terbaca")
-	}
-	if len(tableRows) < 1 {
-		return nil, fmt.Errorf("file harus memiliki baris header")
-	}
-
-	header := normalizeHeader(tableRows[0])
-	want := make([]string, len(columns))
-	for i, c := range columns {
-		want[i] = c
-	}
-	if !equalFoldSlice(header[:min(len(header), len(want))], want[:min(len(header), len(want))]) {
-		return nil, fmt.Errorf("header harus berisi kolom: %s", joinColumns(columns))
-	}
-
-	var data [][]string
-	for _, r := range tableRows[1:] {
-		row := make([]string, len(columns))
-		for i := range columns {
-			if i < len(r) {
-				row[i] = trimSpace(r[i])
-			}
-		}
-		data = append(data, row)
-	}
-	return data, nil
-}
-
-func normalizeHeader(cells []string) []string {
-	out := make([]string, len(cells))
-	for i, c := range cells {
-		out[i] = lower(trimSpace(c))
-	}
-	return out
-}
-
-func equalFoldSlice(a, b []string) bool {
-	for i := range b {
-		if i >= len(a) || a[i] != b[i] {
-			return false
-		}
-	}
-	return true
-}
-
-func joinColumns(cols []string) string {
-	out := ""
-	for i, c := range cols {
-		if i > 0 {
-			out += ", "
-		}
-		out += c
-	}
-	return out
-}
-
-func buildTemplate(sheetName string, columns []string, sample [][]any) ([]byte, error) {
-	f := excelize.NewFile()
-	sheet := f.GetSheetName(0)
-	if sheetName != "Sheet1" {
-		f.SetSheetName(sheet, sheetName)
-		sheet = sheetName
-	}
-	for i, col := range columns {
-		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
-		_ = f.SetCellValue(sheet, cell, col)
-	}
-	for rIdx, row := range sample {
-		for cIdx, v := range row {
-			cell, _ := excelize.CoordinatesToCellName(cIdx+1, rIdx+2)
-			_ = f.SetCellValue(sheet, cell, v)
-		}
-	}
-	widths := map[int]float64{1: 16, 2: 24, 3: 28, 4: 24, 5: 16}
-	for idx, w := range widths {
-		col, _ := excelize.ColumnNumberToName(idx + 1)
-		_ = f.SetColWidth(sheet, col, col, w)
-	}
-	var buf bytes.Buffer
-	if err := f.Write(&buf); err != nil {
-		return nil, err
-	}
-	return buf.Bytes(), nil
-}
-
-func trimSpace(s string) string { return strings.TrimSpace(s) }
-
-func lower(s string) string { return strings.ToLower(s) }
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }

@@ -91,12 +91,13 @@ func (h *QuestionHandler) Preview(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Preview soal", ginH{
-		"type":         normalizeQuestionType(q.QuestionType),
-		"content_html": q.Content,
-		"image":        q.Media,
-		"score_weight": q.ScoreWeight,
-		"options":      opts,
-		"answer_keys":  answerKeysList(q.AnswerKeys),
+		"type":           normalizeQuestionType(q.QuestionType),
+		"content_html":   q.Content,
+		"media_position": q.MediaPosition,
+		"image":          q.Media,
+		"score_weight":   q.ScoreWeight,
+		"options":        opts,
+		"answer_keys":    answerKeysList(q.AnswerKeys),
 		// kunci jawaban ikut karena preview hanya untuk admin/penulis soal
 		"correct_keys": correctKeysOf(q),
 		"explanation":  q.Explanation,
@@ -119,23 +120,24 @@ type optionPayload struct {
 	Label     string  `json:"label"`
 	Text      string  `json:"text"`
 	Content   string  `json:"content"`
-	MediaID   *string `json:"media_id" binding:"omitempty,uuid"`
+	MediaID   *string `json:"media_id"`
 	IsCorrect bool    `json:"is_correct"`
 }
 
 type questionRequest struct {
-	Type         string          `json:"type"`
-	QuestionType string          `json:"question_type"`
-	Text         string          `json:"text"`
-	Content      string          `json:"content"`
-	ScoreWeight  *float64        `json:"score_weight"`
-	Points       *float64        `json:"points"`
-	Explanation  *string         `json:"explanation" binding:"omitempty,max=2000"`
-	MediaID      *string         `json:"media_id" binding:"omitempty,uuid"`
-	BankID       string          `json:"question_bank_id" binding:"omitempty,uuid"`
-	AnswerKeys   []string        `json:"answer_keys"`
-	AnswerKey    string          `json:"answer_key"`
-	Options      []optionPayload `json:"options"`
+	Type          string          `json:"type"`
+	QuestionType  string          `json:"question_type"`
+	Text          string          `json:"text"`
+	Content       string          `json:"content"`
+	ScoreWeight   *float64        `json:"score_weight"`
+	Points        *float64        `json:"points"`
+	Explanation   *string         `json:"explanation" binding:"omitempty,max=2000"`
+	MediaID       *string         `json:"media_id" binding:"omitempty,uuid"`
+	MediaPosition string          `json:"media_position"`
+	BankID        string          `json:"question_bank_id" binding:"omitempty,uuid"`
+	AnswerKeys    []string        `json:"answer_keys"`
+	AnswerKey     string          `json:"answer_key"`
+	Options       []optionPayload `json:"options"`
 }
 
 func firstNonEmpty(vals ...string) string {
@@ -155,9 +157,10 @@ func (h *QuestionHandler) buildInput(c *gin.Context, bankIDFromPath *uuid.UUID) 
 	}
 
 	input := usecase.QuestionInput{
-		Type:    normalizeQuestionType(firstNonEmpty(req.Type, req.QuestionType)),
-		Content: firstNonEmpty(req.Text, req.Content),
-		Options: make([]usecase.OptionInput, 0, len(req.Options)),
+		Type:          normalizeQuestionType(firstNonEmpty(req.Type, req.QuestionType)),
+		Content:       firstNonEmpty(req.Text, req.Content),
+		MediaPosition: req.MediaPosition,
+		Options:       make([]usecase.OptionInput, 0, len(req.Options)),
 	}
 
 	if req.ScoreWeight != nil {

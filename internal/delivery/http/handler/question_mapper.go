@@ -66,6 +66,7 @@ func questionResponse(q *model.Question) ginH {
 		"answer_keys":      answerKeysList(q.AnswerKeys),
 		"media_id":         q.MediaID,
 		"media":            q.Media,
+		"media_position":   q.MediaPosition,
 		"options":          opts,
 		"created_at":       q.CreatedAt,
 		"updated_at":       q.UpdatedAt,

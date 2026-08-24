@@ -53,11 +53,15 @@ func run() error {
 		return err
 	}
 
-	router := server.NewRouter(server.RouterDeps{
+	router, err := server.NewRouter(server.RouterDeps{
 		Cfg: cfg,
 		Log: log,
 		DB:  db,
 	})
+	if err != nil {
+		log.Error("failed to init router", slog.String("error", err.Error()))
+		return err
+	}
 
 	srv := &http.Server{
 		Addr:         cfg.AppHost + ":" + cfg.AppPort,

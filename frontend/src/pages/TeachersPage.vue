@@ -130,7 +130,7 @@ const crud = useCrudTable<Teacher>({
 
       <ImportModal
         :open="showImport"
-        resource="teachers"
+        upload-path="/teachers/import"
         title="Impor Data Guru"
         :template-url="teacherService.templateUrl"
         @close="showImport = false"

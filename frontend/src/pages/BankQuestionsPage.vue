@@ -6,6 +6,7 @@ import {
   ArrowUp,
   Check,
   Eye,
+  ImagePlus,
   Pencil,
   Plus,
   Search,
@@ -15,6 +16,7 @@ import {
 
 import AppShell from '../components/layout/AppShell.vue'
 import RichTextEditor from '../components/ui/RichTextEditor.vue'
+import ImportModal from '../components/admin/ImportModal.vue'
 import BaseBadge from '../components/ui/BaseBadge.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
@@ -25,6 +27,7 @@ import BaseTable from '../components/ui/BaseTable.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
 import { apiErrorMessage } from '../lib/axios'
+import { uploadMedia } from '../services/media.service'
 import { bankService, questionService } from '../services/question.service'
 import type { Question, QuestionType, QuestionPayload } from '../types/api'
 import { useUiStore } from '../stores/ui'
@@ -99,12 +102,19 @@ const formType = ref<QuestionType>('MULTIPLE_CHOICE')
 const formText = ref('')
 const formScore = ref('1.0')
 const formExplanation = ref('')
+const formMediaId = ref<string | null>(null)
+const formMediaUrl = ref<string | null>(null)
+const formMediaPosition = ref<'before' | 'after'>('after')
+const showImport = ref(false)
 const formAnswerKeys = ref('')
 
 interface OptionRow {
   option_key: string
   text: string
   is_correct: boolean
+  media_id: string | null
+  media_url: string | null
+  uploading: boolean
 }
 
 const optionRows = ref<OptionRow[]>([])
@@ -115,8 +125,8 @@ const multiCorrect = computed(() => formType.value === 'MULTIPLE_ANSWER')
 watch(formType, (t) => {
   if (t === 'TRUE_FALSE' && optionRows.value.length !== 2) {
     optionRows.value = [
-      { option_key: 'A', text: 'BENAR', is_correct: true },
-      { option_key: 'B', text: 'SALAH', is_correct: false },
+      { option_key: 'A', text: 'BENAR', is_correct: true, media_id: null, media_url: null, uploading: false },
+      { option_key: 'B', text: 'SALAH', is_correct: false, media_id: null, media_url: null, uploading: false },
     ]
   }
 })
@@ -124,7 +134,14 @@ watch(formType, (t) => {
 function addOption() {
   if (!needsOptions.value || optionRows.value.length >= 5) return
   const key = String.fromCharCode(65 + optionRows.value.length)
-  optionRows.value.push({ option_key: key, text: '', is_correct: false })
+  optionRows.value.push({
+    option_key: key,
+    text: '',
+    is_correct: false,
+    media_id: null,
+    media_url: null,
+    uploading: false,
+  })
 }
 
 function removeOption(i: number) {
@@ -161,10 +178,13 @@ function openCreate() {
   formText.value = ''
   formScore.value = '1.0'
   formExplanation.value = ''
+  formMediaId.value = null
+  formMediaUrl.value = null
+  formMediaPosition.value = 'after'
   formAnswerKeys.value = ''
   optionRows.value = [
-    { option_key: 'A', text: '', is_correct: true },
-    { option_key: 'B', text: '', is_correct: false },
+    { option_key: 'A', text: '', is_correct: true, media_id: null, media_url: null, uploading: false },
+    { option_key: 'B', text: '', is_correct: false, media_id: null, media_url: null, uploading: false },
   ]
   fieldErrors.value = {}
   formOpen.value = true
@@ -176,11 +196,17 @@ function openEdit(q: Question) {
   formText.value = q.text
   formScore.value = String(q.score_weight)
   formExplanation.value = q.explanation ?? ''
+  formMediaId.value = q.media_id
+  formMediaUrl.value = q.media?.file_path ?? null
+  formMediaPosition.value = (q.media_position as 'before' | 'after') ?? 'after'
   formAnswerKeys.value = (q.answer_keys ?? []).join('\n')
-  optionRows.value = (q.options ?? []).map((o, i) => ({
-    option_key: o.option_key || String.fromCharCode(65 + i),
+  optionRows.value = (q.options ?? []).map((o) => ({
+    option_key: o.option_key,
     text: o.text,
     is_correct: o.is_correct,
+    media_id: o.media_id,
+    media_url: o.media?.file_path ?? null,
+    uploading: false,
   }))
   fieldErrors.value = {}
   formOpen.value = true
@@ -199,6 +225,32 @@ function clientValidate(): Record<string, string> {
   return e
 }
 
+async function onUploadImage(event: Event, target: 'question' | number) {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  try {
+    if (target === 'question') {
+      const media = await uploadMedia(file, 'QUESTION_IMAGE')
+      formMediaId.value = media.id
+      formMediaUrl.value = media.file_path
+      ui.toastSuccess('Gambar soal terunggah.')
+    } else {
+      const row = optionRows.value[target]
+      row.uploading = true
+      const media = await uploadMedia(file, 'OPTION_IMAGE')
+      row.media_id = media.id
+      row.media_url = media.file_path
+      ui.toastSuccess('Gambar opsi terunggah.')
+    }
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal mengunggah gambar.'))
+  } finally {
+    if (target !== 'question') optionRows.value[target].uploading = false
+    input.value = ''
+  }
+}
+
 async function submit() {
   fieldErrors.value = {}
   const clientErrors = clientValidate()
@@ -213,8 +265,15 @@ async function submit() {
     score_weight: Number(formScore.value) || 1,
     explanation: formExplanation.value || null,
     options: needsOptions.value
-      ? optionRows.value.map((o) => ({ option_key: o.option_key, text: o.text, is_correct: o.is_correct }))
+      ? optionRows.value.map((o) => ({
+          option_key: o.option_key,
+          text: o.text,
+          is_correct: o.is_correct,
+          media_id: o.media_id,
+        }))
       : [],
+    media_id: formMediaId.value,
+    media_position: formMediaPosition.value,
     answer_keys: formType.value === 'SHORT_ANSWER'
       ? formAnswerKeys.value.split('\n').map((s) => s.trim()).filter(Boolean)
       : undefined,
@@ -338,6 +397,7 @@ async function publishBank() {
           <BaseButton v-if="bankStatus === 'draft'" variant="outline" @click="publishBank">
             <Send /> Publish
           </BaseButton>
+          <BaseButton variant="outline" @click="showImport = true"><Upload /> Impor</BaseButton>
           <BaseButton @click="openCreate()"><Plus /> Tambah Soal</BaseButton>
         </div>
       </div>
@@ -359,7 +419,19 @@ async function publishBank() {
             <tr v-for="(q, qi) in questions" :key="q.id" class="border-b border-border align-top transition-colors last:border-0 hover:bg-accent/50">
               <td class="px-4 py-3 text-muted-foreground">{{ ((meta?.page ?? 1) - 1) * 20 + qi + 1 }}</td>
               <td class="px-4 py-3">
+                <img
+                  v-if="q.media && q.media_position === 'before'"
+                  :src="q.media.file_path"
+                  class="mb-2 max-h-24 rounded-lg border border-border"
+                  alt=""
+                />
                 <div class="prose-sm max-w-lg [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="q.text" />
+                <img
+                  v-if="q.media && q.media_position !== 'before'"
+                  :src="q.media.file_path"
+                  class="mt-2 max-h-24 rounded-lg border border-border"
+                  alt=""
+                />
                 <ul v-if="q.options && q.options.length" class="mt-2 space-y-1 text-xs text-muted-foreground">
                   <li v-for="(opt, oi) in q.options" :key="opt.id" class="flex items-center gap-1.5">
                     <span class="w-12 shrink-0 space-x-0.5">
@@ -415,6 +487,17 @@ async function publishBank() {
         </template>
       </template>
 
+      <ImportModal
+        :open="showImport"
+        title="Impor Soal dari Excel"
+        upload-path="/questions/import/validate"
+        process-path="/questions/import/process"
+        :extra-fields="{ question_bank_id: bankId }"
+        template-url="/api/v1/questions/import/template"
+        @close="showImport = false"
+        @imported="fetchQuestions()"
+      />
+
       <!-- FORM SOAL -->
       <BaseModal :open="formOpen" :title="editingQuestion ? 'Edit Soal' : 'Tambah Soal'" @close="formOpen = false">
         <form class="max-h-[70vh] space-y-4 overflow-y-auto pr-1" @submit.prevent="submit">
@@ -426,6 +509,27 @@ async function publishBank() {
             </p>
             <RichTextEditor v-model="formText" />
             <p v-if="fieldErrors.text" class="mt-1 text-xs font-medium text-destructive">{{ fieldErrors.text }}</p>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted">
+              <ImagePlus class="size-4" />
+              {{ formMediaId ? 'Ganti gambar soal' : 'Lampirkan gambar soal' }}
+              <input type="file" accept=".png,.jpg,.jpeg,.gif,.webp" class="hidden" @change="onUploadImage($event, 'question')" />
+            </label>
+            <img v-if="formMediaUrl" :src="formMediaUrl" class="h-10 rounded border border-border" alt="" />
+            <BaseBadge v-if="formMediaId" tone="success">siap</BaseBadge>
+          </div>
+
+          <div v-if="formMediaId" class="w-56">
+            <BaseSelect
+              v-model="formMediaPosition"
+              label="Posisi Gambar"
+              :options="[
+                { value: 'after', label: 'Setelah teks soal' },
+                { value: 'before', label: 'Sebelum teks soal' },
+              ]"
+            />
           </div>
 
           <div class="grid grid-cols-2 gap-3">
@@ -449,9 +553,18 @@ async function publishBank() {
                 :aria-label="`Tandai opsi ${row.option_key} benar`"
                 @change="onCorrectChange(i)"
               />
-              <div class="flex-1">
+              <div class="flex-1 space-y-1">
                 <BaseInput v-model="row.text" placeholder="Isi opsi…" />
+                <div v-if="row.media_url" class="flex items-center gap-2">
+                  <img :src="row.media_url" class="h-8 rounded border border-border" alt="" />
+                  <span class="text-[10px] text-success">gambar siap</span>
+                </div>
               </div>
+              <label class="cursor-pointer pt-1.5 text-muted-foreground transition-colors hover:text-primary" :title="`Unggah gambar opsi ${row.option_key}`">
+                <ImagePlus v-if="!row.uploading" class="size-4" />
+                <span v-else class="text-xs">…</span>
+                <input type="file" accept=".png,.jpg,.jpeg,.gif,.webp" class="hidden" @change="onUploadImage($event, i)" />
+              </label>
               <div class="flex flex-col pt-1">
                 <BaseButton variant="ghost" size="icon" class="!size-6" aria-label="Naik" @click="moveOption(i, -1)">
                   <ArrowUp class="!size-3" />
@@ -492,7 +605,19 @@ async function publishBank() {
             <BaseBadge :tone="typeTone[previewData.type] ?? 'neutral'">{{ typeLabel[previewData.type] ?? previewData.type }}</BaseBadge>
             <span class="text-xs text-muted-foreground">bobot {{ previewData.score_weight }}</span>
           </div>
+          <img
+            v-if="previewData.image && previewData.media_position === 'before'"
+            :src="previewData.image.file_path"
+            class="mb-3 max-h-40 rounded-lg border border-border"
+            alt=""
+          />
           <div class="prose-sm [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="previewData.content_html" />
+          <img
+            v-if="previewData.image && previewData.media_position !== 'before'"
+            :src="previewData.image.file_path"
+            class="mt-3 max-h-40 rounded-lg border border-border"
+            alt=""
+          />
 
           <ul v-if="previewData.options.length" class="space-y-2 text-sm">
             <li

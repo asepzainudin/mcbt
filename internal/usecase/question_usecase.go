@@ -20,14 +20,15 @@ type OptionInput struct {
 }
 
 type QuestionInput struct {
-	BankID      uuid.UUID
-	Type        string
-	Content     string
-	ScoreWeight float64
-	Explanation *string
-	MediaID     *uuid.UUID
-	Options     []OptionInput
-	AnswerKeys  []string
+	BankID        uuid.UUID
+	Type          string
+	Content       string
+	ScoreWeight   float64
+	Explanation   *string
+	MediaID       *uuid.UUID
+	MediaPosition string
+	Options       []OptionInput
+	AnswerKeys    []string
 }
 
 type QuestionUsecase struct {
@@ -66,6 +67,13 @@ func validateType(t string) error {
 		}
 	}
 	return nil
+}
+
+func normalizeMediaPosition(pos string) string {
+	if pos == "before" {
+		return "before"
+	}
+	return "after"
 }
 
 func validateScore(w float64) float64 {
@@ -220,6 +228,7 @@ func (u *QuestionUsecase) Create(ctx context.Context, in QuestionInput) (*model.
 		ScoreWeight:    validateScore(in.ScoreWeight),
 		Explanation:    in.Explanation,
 		AnswerKeys:     joinKeys(in.AnswerKeys),
+		MediaPosition:  normalizeMediaPosition(in.MediaPosition),
 		Options:        opts,
 	}
 	if err := u.repo.CreateWithOptions(ctx, question); err != nil {
@@ -273,6 +282,7 @@ func (u *QuestionUsecase) Update(ctx context.Context, id uuid.UUID, in QuestionI
 	existing.ScoreWeight = validateScore(in.ScoreWeight)
 	existing.Explanation = in.Explanation
 	existing.AnswerKeys = joinKeys(in.AnswerKeys)
+	existing.MediaPosition = normalizeMediaPosition(in.MediaPosition)
 
 	if err := u.repo.UpdateWithOptions(ctx, existing, opts); err != nil {
 		return nil, err

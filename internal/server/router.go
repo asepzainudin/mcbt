@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
@@ -9,6 +10,7 @@ import (
 	"github.com/asepzainudin14/mcbt/internal/config"
 	"github.com/asepzainudin14/mcbt/internal/delivery/http/handler"
 	jwtmanager "github.com/asepzainudin14/mcbt/internal/pkg/jwt"
+	"github.com/asepzainudin14/mcbt/internal/pkg/storage"
 	"github.com/asepzainudin14/mcbt/internal/repository"
 	middleware "github.com/asepzainudin14/mcbt/internal/server/middleware"
 	"github.com/asepzainudin14/mcbt/internal/usecase"
@@ -20,7 +22,7 @@ type RouterDeps struct {
 	DB  *gorm.DB
 }
 
-func NewRouter(d RouterDeps) *gin.Engine {
+func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	if d.Cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -61,11 +63,24 @@ func NewRouter(d RouterDeps) *gin.Engine {
 
 	bankRepo := repository.NewQuestionBankRepository(d.DB)
 	questionRepo := repository.NewQuestionRepository(d.DB)
+	mediaRepo := repository.NewMediaRepository(d.DB)
+
+	storageClient, err := storage.NewClient(context.Background(), d.Cfg)
+	if err != nil {
+		return nil, err
+	}
+
 	bankHandler := handler.NewQuestionBankHandler(
 		usecase.NewQuestionBankUsecase(bankRepo, subjectRepo, questionRepo),
 	)
 	questionHandler := handler.NewQuestionHandler(
 		usecase.NewQuestionUsecase(questionRepo, bankRepo),
+	)
+	questionImportHandler := handler.NewQuestionImportHandler(
+		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
+	)
+	mediaHandler := handler.NewMediaHandler(
+		usecase.NewMediaUsecase(mediaRepo, storageClient, int64(d.Cfg.MaxUploadMB)<<20),
 	)
 
 	r.Use(middleware.RequestID())
@@ -137,6 +152,12 @@ func NewRouter(d RouterDeps) *gin.Engine {
 			adminOnly.PUT("/question-banks/:id", bankHandler.Update)
 			adminOnly.DELETE("/question-banks/:id", bankHandler.Delete)
 
+			adminOnly.GET("/questions/import/template", questionImportHandler.Template)
+			adminOnly.POST("/questions/import/validate", questionImportHandler.Validate)
+			adminOnly.POST("/questions/import/process", questionImportHandler.Process)
+
+			adminOnly.POST("/media/upload", mediaHandler.Upload)
+
 			adminOnly.GET("/questions", questionHandler.List)
 			adminOnly.GET("/questions/:id/preview", questionHandler.Preview)
 			adminOnly.GET("/questions/:id", questionHandler.Get)
@@ -148,5 +169,5 @@ func NewRouter(d RouterDeps) *gin.Engine {
 		}
 	}
 
-	return r
+	return r, nil
 }

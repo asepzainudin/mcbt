@@ -224,7 +224,7 @@ function closeReset() {
 
       <ImportModal
         :open="showImport"
-        resource="students"
+        upload-path="/students/import"
         title="Impor Data Siswa"
         :template-url="studentService.templateUrl"
         @close="showImport = false"

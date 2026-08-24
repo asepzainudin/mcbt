@@ -21,6 +21,7 @@ type Question struct {
 	ScoreWeight    float64    `gorm:"type:numeric(6,2);not null;default:1.0" json:"score_weight"`
 	Explanation    *string    `gorm:"type:text" json:"explanation"`
 	AnswerKeys     *string    `gorm:"type:text" json:"answer_keys,omitempty"`
+	MediaPosition  string     `gorm:"type:varchar(10);not null;default:'after'" json:"media_position"`
 
 	QuestionBank QuestionBank `gorm:"foreignKey:QuestionBankID;references:ID" json:"question_bank,omitempty"`
 	Media        *Media       `gorm:"foreignKey:MediaID;references:ID" json:"media,omitempty"`

@@ -28,6 +28,14 @@ type Config struct {
 
 	CookieSecure   bool
 	CookieSameSite string
+
+	S3Endpoint  string
+	S3AccessKey string
+	S3SecretKey string
+	S3Bucket    string
+	S3UseSSL    bool
+	S3PublicURL string
+	MaxUploadMB int
 }
 
 type DBCfg struct {
@@ -74,6 +82,13 @@ func Load() (*Config, error) {
 		JWTRefreshTTL:  getEnvDuration("JWT_REFRESH_TTL_DAYS", 7, 24*time.Hour),
 		CookieSecure:   getEnvBool("COOKIE_SECURE", false),
 		CookieSameSite: getEnv("COOKIE_SAMESITE", "strict"),
+		S3Endpoint:     getEnv("S3_ENDPOINT", "http://localhost:9000"),
+		S3AccessKey:    getEnv("S3_ACCESS_KEY", "minioadmin"),
+		S3SecretKey:    getEnv("S3_SECRET_KEY", "minioadmin"),
+		S3Bucket:       getEnv("S3_BUCKET", "mcbt-media"),
+		S3UseSSL:       getEnvBool("S3_USE_SSL", false),
+		S3PublicURL:    getEnv("S3_PUBLIC_URL", "http://localhost:9000/mcbt-media"),
+		MaxUploadMB:    getEnvInt("MAX_UPLOAD_MB", 5),
 		DB: DBCfg{
 			Host:                getEnv("DB_HOST", "localhost"),
 			Port:                getEnv("DB_PORT", "5432"),

@@ -122,6 +122,8 @@ export const questionService = {
           type: string
           content_html: string
           score_weight: number
+          media_position: 'before' | 'after'
+          image: { file_path: string; file_name: string } | null
           options: { option_key: string; text: string; media?: unknown }[]
           correct_keys: string[]
           answer_keys: string[]

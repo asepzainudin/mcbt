@@ -47,6 +47,11 @@ func (r *QuestionRepository) List(ctx context.Context, p QuestionListParams) (*P
 	}
 
 	err := q.
+		Preload("Options", func(db *gorm.DB) *gorm.DB {
+			return db.Order("position ASC")
+		}).
+		Preload("Options.Media").
+		Preload("Media").
 		Order("created_at ASC").
 		Limit(p.Limit).Offset((p.Page - 1) * p.Limit).
 		Find(&items).Error
@@ -115,7 +120,7 @@ func (r *QuestionRepository) ReplaceOptions(ctx context.Context, questionID uuid
 func (r *QuestionRepository) UpdateWithOptions(ctx context.Context, question *model.Question, options []model.Option) error {
 	return TranslateDBError(r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Model(question).
-			Select("question_bank_id", "media_id", "question_type", "content", "score_weight", "explanation", "answer_keys", "updated_at").
+			Select("question_bank_id", "media_id", "question_type", "content", "score_weight", "explanation", "answer_keys", "media_position", "updated_at").
 			Updates(question).Error; err != nil {
 			return err
 		}
