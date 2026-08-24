@@ -103,6 +103,15 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	candidateExamHandler := handler.NewCandidateExamHandler(
 		usecase.NewCandidateExamUsecase(attemptRepo, studentRepo, examScheduleRepo, examRepo, examParticipantRepo),
 	)
+	attemptEngineHandler := handler.NewAttemptEngineHandler(
+		usecase.NewAttemptEngineUsecase(
+			attemptRepo,
+			repository.NewExamAnswerRepository(d.DB),
+			studentRepo,
+			repository.NewExamSectionRepository(d.DB),
+			examRepo,
+		),
+	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
 	)
@@ -224,6 +233,10 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 				candidate.GET("/exams", candidateExamHandler.ListExams)
 				candidate.POST("/exams/:exam_id/validate-token", candidateExamHandler.ValidateToken)
 				candidate.POST("/exams/:exam_id/start", candidateExamHandler.Start)
+				candidate.GET("/attempts/:id/questions", attemptEngineHandler.GetQuestions)
+				candidate.POST("/attempts/:id/answers", attemptEngineHandler.SaveAnswer)
+				candidate.POST("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Flag)
+				candidate.DELETE("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Unflag)
 			}
 
 			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)

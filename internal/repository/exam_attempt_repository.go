@@ -98,3 +98,18 @@ func (r *ExamAttemptRepository) ListCandidateExams(ctx context.Context, studentI
 }
 
 var _ = errors.Is
+
+func (r *ExamAttemptRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.ExamAttempt, error) {
+	var a model.ExamAttempt
+	err := r.db.WithContext(ctx).First(&a, "id = ?", id).Error
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
+func (r *ExamAttemptRepository) MarkExpired(ctx context.Context, id uuid.UUID) error {
+	return r.db.WithContext(ctx).Model(&model.ExamAttempt{}).
+		Where("id = ? AND status = ?", id, model.AttemptStatusInProgress).
+		Update("status", model.AttemptStatusExpired).Error
+}

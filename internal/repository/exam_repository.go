@@ -122,3 +122,10 @@ func (r *ExamRepository) Delete(ctx context.Context, id uuid.UUID) error {
 	}
 	return nil
 }
+
+// CountBankQuestion counts 1 when the question belongs to the given bank.
+func (r *ExamRepository) CountBankQuestion(ctx context.Context, bankID, questionID uuid.UUID, dst *int64) error {
+	return r.db.WithContext(ctx).Model(&model.Question{}).
+		Where("id = ? AND question_bank_id = ?", questionID, bankID).
+		Count(dst).Error
+}

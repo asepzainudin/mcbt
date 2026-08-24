@@ -154,3 +154,69 @@ func (r *ExamSectionRepository) ListQuestions(ctx context.Context, sectionID uui
 }
 
 // ListQuestions preload sudah di-usecase; versi dengan bank:
+
+type ExamQuestionGroup struct {
+	Section   model.ExamSection
+	Questions []model.Question
+}
+
+// ListExamQuestions groups mapped questions per section (sequence order).
+// Falls back to bank questions grouped in one pseudo-section when no mapping exists.
+func (r *ExamSectionRepository) ListExamQuestions(ctx context.Context, exam *model.Exam) ([]ExamQuestionGroup, error) {
+	var sections []model.ExamSection
+	if err := r.db.WithContext(ctx).
+		Where("exam_id = ?", exam.ID).
+		Order("sequence ASC").
+		Find(&sections).Error; err != nil {
+		return nil, err
+	}
+
+	groups := make([]ExamQuestionGroup, 0, len(sections)+1)
+	hasAny := false
+	for _, s := range sections {
+		var qs []model.Question
+		if err := r.db.WithContext(ctx).
+			Joins("JOIN exam_section_questions esq ON esq.question_id = questions.id").
+			Where("esq.section_id = ?", s.ID).
+			Preload("Options", func(db *gorm.DB) *gorm.DB { return db.Order("position ASC") }).
+			Preload("Options.Media").
+			Preload("Media").
+			Order("questions.created_at ASC").
+			Find(&qs).Error; err != nil {
+			return nil, err
+		}
+		if len(qs) > 0 {
+			hasAny = true
+		}
+		groups = append(groups, ExamQuestionGroup{Section: s, Questions: qs})
+	}
+
+	if !hasAny && exam.QuestionBankID != nil {
+		var qs []model.Question
+		if err := r.db.WithContext(ctx).
+			Where("question_bank_id = ?", exam.QuestionBankID).
+			Preload("Options", func(db *gorm.DB) *gorm.DB { return db.Order("position ASC") }).
+			Preload("Options.Media").
+			Preload("Media").
+			Order("created_at ASC").
+			Find(&qs).Error; err != nil {
+			return nil, err
+		}
+		groups = append(groups, ExamQuestionGroup{
+			Section:   model.ExamSection{Name: "Soal", Sequence: 1},
+			Questions: qs,
+		})
+	}
+	return groups, nil
+}
+
+// QuestionInExam checks whether a question is mapped in any section of the exam.
+func (r *ExamSectionRepository) QuestionInExam(ctx context.Context, examID, questionID uuid.UUID) (bool, error) {
+	var count int64
+	err := r.db.WithContext(ctx).
+		Model(&model.ExamSectionQuestion{}).
+		Joins("JOIN exam_sections es ON es.id = exam_section_questions.section_id").
+		Where("es.exam_id = ? AND exam_section_questions.question_id = ?", examID, questionID).
+		Count(&count).Error
+	return count > 0, err
+}
