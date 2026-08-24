@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"mime/multipart"
 
 	"github.com/google/uuid"
@@ -50,7 +51,7 @@ func (u *MediaUsecase) Upload(ctx context.Context, fileHeader *multipart.FileHea
 	}
 	defer f.Close()
 
-	url, size, err := u.storage.PutImage(ctx, f, mime, folder)
+	key, size, err := u.storage.PutImage(ctx, f, mime, folder)
 	if err != nil {
 		return nil, apperror.Internal(err)
 	}
@@ -58,7 +59,7 @@ func (u *MediaUsecase) Upload(ctx context.Context, fileHeader *multipart.FileHea
 	media := &model.Media{
 		UploadedBy: &uploaderID,
 		FileName:   fileHeader.Filename,
-		FilePath:   url,
+		FilePath:   key,
 		MimeType:   mime,
 		FileSize:   size,
 	}
@@ -69,4 +70,19 @@ func (u *MediaUsecase) Upload(ctx context.Context, fileHeader *multipart.FileHea
 		return nil, err
 	}
 	return media, nil
+}
+
+func (u *MediaUsecase) GetByID(ctx context.Context, id uuid.UUID) (*model.Media, error) {
+	media, err := u.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NotFound("Media tidak ditemukan", err)
+		}
+		return nil, apperror.Internal(err)
+	}
+	return media, nil
+}
+
+func (u *MediaUsecase) GetFile(ctx context.Context, key string) (io.ReadCloser, string, int64, error) {
+	return u.storage.GetImage(ctx, key)
 }

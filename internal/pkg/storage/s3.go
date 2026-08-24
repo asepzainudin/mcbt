@@ -18,10 +18,9 @@ import (
 )
 
 type Client struct {
-	s3        *s3.Client
-	bucket    string
-	publicURL string
-	maxBytes  int64
+	s3       *s3.Client
+	bucket   string
+	maxBytes int64
 }
 
 func NewClient(ctx context.Context, cfg *config.Config) (*Client, error) {
@@ -41,10 +40,9 @@ func NewClient(ctx context.Context, cfg *config.Config) (*Client, error) {
 	})
 
 	c := &Client{
-		s3:        client,
-		bucket:    cfg.S3Bucket,
-		publicURL: strings.TrimRight(cfg.S3PublicURL, "/"),
-		maxBytes:  int64(cfg.MaxUploadMB) << 20,
+		s3:       client,
+		bucket:   cfg.S3Bucket,
+		maxBytes: int64(cfg.MaxUploadMB) << 20,
 	}
 
 	if _, err := client.HeadBucket(ctx, &s3.HeadBucketInput{Bucket: aws.String(c.bucket)}); err != nil {
@@ -70,7 +68,7 @@ func IsAllowedImageType(mime string) bool {
 
 func (c *Client) MaxBytes() int64 { return c.maxBytes }
 
-// PutImage stores the reader content under <folder>/<random>.<ext> and returns its public URL.
+// PutImage stores the reader content under <folder>/<random>.<ext> and returns the object key.
 func (c *Client) PutImage(ctx context.Context, r io.Reader, mime, folder string) (string, int64, error) {
 	ext, ok := allowedImageTypes[mime]
 	if !ok {
@@ -97,7 +95,27 @@ func (c *Client) PutImage(ctx context.Context, r io.Reader, mime, folder string)
 		return "", 0, fmt.Errorf("upload ke object storage: %w", err)
 	}
 
-	return fmt.Sprintf("%s/%s", c.publicURL, key), int64(len(data)), nil
+	return key, int64(len(data)), nil
+}
+
+// GetImage streams the stored object back along with its content type.
+func (c *Client) GetImage(ctx context.Context, key string) (io.ReadCloser, string, int64, error) {
+	out, err := c.s3.GetObject(ctx, &s3.GetObjectInput{
+		Bucket: aws.String(c.bucket),
+		Key:    aws.String(strings.TrimPrefix(key, "/")),
+	})
+	if err != nil {
+		return nil, "", 0, fmt.Errorf("mengambil file dari object storage: %w", err)
+	}
+	contentType := "application/octet-stream"
+	if out.ContentType != nil {
+		contentType = *out.ContentType
+	}
+	size := int64(0)
+	if out.ContentLength != nil {
+		size = *out.ContentLength
+	}
+	return out.Body, contentType, size, nil
 }
 
 func randomKey(folder, ext string) (string, error) {

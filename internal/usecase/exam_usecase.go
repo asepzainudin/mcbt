@@ -219,6 +219,26 @@ func (u *ExamUsecase) UpdateSettings(ctx context.Context, id uuid.UUID, in ExamS
 	return u.repo.FindByID(ctx, id)
 }
 
+func (u *ExamUsecase) Publish(ctx context.Context, id uuid.UUID) (*model.Exam, error) {
+	if err := u.repo.SetStatus(ctx, id, model.ExamStatusPublished); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NotFound("Ujian tidak ditemukan", err)
+		}
+		return nil, err
+	}
+	return u.repo.FindByID(ctx, id)
+}
+
+func (u *ExamUsecase) Close(ctx context.Context, id uuid.UUID) (*model.Exam, error) {
+	if err := u.repo.SetStatus(ctx, id, model.ExamStatusClosed); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NotFound("Ujian tidak ditemukan", err)
+		}
+		return nil, err
+	}
+	return u.repo.FindByID(ctx, id)
+}
+
 func (u *ExamUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	err := u.repo.Delete(ctx, id)
 	if err != nil {

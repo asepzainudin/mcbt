@@ -66,6 +66,18 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/candidate',
+      name: 'candidate-exams',
+      component: () => import('../pages/CandidateExamsPage.vue'),
+      meta: { requiresAuth: true, requiresRole: 'student' },
+    },
+    {
+      path: '/candidate/attempts/:id',
+      name: 'candidate-attempt',
+      component: () => import('../pages/CandidateAttemptPage.vue'),
+      meta: { requiresAuth: true, requiresRole: 'student' },
+    },
+    {
       path: '/exams/:id/schedule',
       name: 'exam-schedule',
       component: () => import('../pages/ExamSchedulePage.vue'),
@@ -113,6 +125,12 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAdmin && !auth.user?.roles.includes('admin')) {
     const ui = useUiStore()
     ui.toastError('Halaman ini hanya untuk admin.')
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.requiresRole && !auth.user?.roles.includes(to.meta.requiresRole as string)) {
+    const ui = useUiStore()
+    ui.toastError('Anda tidak memiliki akses ke halaman ini.')
     return { name: 'dashboard' }
   }
 

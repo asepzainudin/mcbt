@@ -14,6 +14,20 @@ func normalizeQuestionType(raw string) string {
 	return strings.ToLower(strings.TrimSpace(raw))
 }
 
+func mediaRefResponse(m *model.Media) ginH {
+	if m == nil {
+		return nil
+	}
+	return ginH{
+		"id":        m.ID,
+		"file_name": m.FileName,
+		"mime_type": m.MimeType,
+		"file_size": m.FileSize,
+		"file_path": m.FilePath,
+		"url":       "/api/v1/media/" + m.ID.String() + "/file",
+	}
+}
+
 func optionKey(label string) string {
 	return strings.ToUpper(strings.TrimSpace(label))
 }
@@ -49,7 +63,7 @@ func questionResponse(q *model.Question) ginH {
 			"is_correct": o.IsCorrect,
 			"position":   o.Position,
 			"media_id":   o.MediaID,
-			"media":      o.Media,
+			"media":      mediaRefResponse(o.Media),
 		})
 	}
 
@@ -65,7 +79,7 @@ func questionResponse(q *model.Question) ginH {
 		"explanation":      q.Explanation,
 		"answer_keys":      answerKeysList(q.AnswerKeys),
 		"media_id":         q.MediaID,
-		"media":            q.Media,
+		"media":            mediaRefResponse(q.Media),
 		"media_position":   q.MediaPosition,
 		"options":          opts,
 		"created_at":       q.CreatedAt,

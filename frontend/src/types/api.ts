@@ -114,6 +114,7 @@ export interface MediaRef {
   file_path: string
   file_name: string
   mime_type: string
+  url: string
 }
 
 export type BankStatus = 'draft' | 'published' | 'archived'
@@ -288,4 +289,27 @@ export interface ExamParticipant {
 export interface AssignResult {
   assigned: number
   skipped: number
+}
+
+export interface CandidateExam {
+  exam_id: string
+  title: string
+  subject_code: string
+  subject_name: string
+  duration_minutes: number
+  start_time: string
+  end_time: string
+  token_enabled: boolean
+  max_attempts: number
+  passing_grade: number
+  attempts_used: number
+  active_attempt_id: string | null
+  active_expires_at: string | null
+}
+
+export interface StartAttemptResult {
+  attempt_id: string
+  started_at: string
+  expires_at: string
+  attempt_no: number
 }

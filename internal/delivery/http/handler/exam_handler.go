@@ -229,6 +229,34 @@ func (h *ExamHandler) UpdateSettings(c *gin.Context) {
 	response.Success(c, http.StatusOK, "Pengaturan ujian disimpan", examResponse(e))
 }
 
+func (h *ExamHandler) Publish(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(apperror.BadRequest("ID tidak valid", err))
+		return
+	}
+	e, err := h.uc.Publish(c.Request.Context(), id)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Ujian dipublikasikan", examResponse(e))
+}
+
+func (h *ExamHandler) Close(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(apperror.BadRequest("ID tidak valid", err))
+		return
+	}
+	e, err := h.uc.Close(c.Request.Context(), id)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Ujian ditutup", examResponse(e))
+}
+
 func (h *ExamHandler) Delete(c *gin.Context) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {

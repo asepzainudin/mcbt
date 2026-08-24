@@ -52,6 +52,14 @@ export const examService = {
     ).data.data
   },
 
+  async publish(id: string): Promise<Exam> {
+    return (await api.patch<ApiResponse<Exam>>(`/exams/${id}/publish`)).data.data
+  },
+
+  async close(id: string): Promise<Exam> {
+    return (await api.patch<ApiResponse<Exam>>(`/exams/${id}/close`)).data.data
+  },
+
   async remove(id: string): Promise<void> {
     await api.delete(`/exams/${id}`)
   },

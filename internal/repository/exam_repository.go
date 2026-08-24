@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -96,6 +97,19 @@ func (r *ExamRepository) UpdateSettings(ctx context.Context, e *model.Exam) erro
 			).
 			Updates(e).Error,
 		"")
+}
+
+func (r *ExamRepository) SetStatus(ctx context.Context, id uuid.UUID, status string) error {
+	res := r.db.WithContext(ctx).Model(&model.Exam{}).
+		Where("id = ?", id).
+		Updates(map[string]any{"status": status, "updated_at": time.Now()})
+	if res.Error != nil {
+		return TranslateDBError(res.Error, "")
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (r *ExamRepository) Delete(ctx context.Context, id uuid.UUID) error {

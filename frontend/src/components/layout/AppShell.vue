@@ -16,6 +16,7 @@ import {
   Users,
   FileQuestion,
   ClipboardList,
+  FileEdit,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -32,12 +33,15 @@ const { theme, toggle } = useTheme()
 const sidebarOpen = ref(false)
 
 const navItems = computed(() => {
-  const items = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/exams', label: 'Ujian', icon: ClipboardList },
-  ]
+  const items = [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }]
+  if (auth.user?.roles.includes('student')) {
+    items.push({ to: '/candidate', label: 'Ujian Saya', icon: FileEdit })
+  }
   if (auth.user?.roles.includes('admin')) {
-    items.push({ to: '/roles', label: 'Roles', icon: ShieldCheck })
+    items.push(
+      { to: '/exams', label: 'Ujian', icon: ClipboardList },
+      { to: '/roles', label: 'Roles', icon: ShieldCheck },
+    )
   }
   return items
 })

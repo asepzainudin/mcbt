@@ -11,8 +11,8 @@ const (
 
 type ExamParticipant struct {
 	BaseModel
-	ExamID      uuid.UUID `gorm:"type:uuid;not null;index:idx_exam_participants_exam" json:"exam_id"`
-	StudentID   uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:uq_exam_participants;index:idx_exam_participants_student" json:"student_id"`
+	ExamID      uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:uq_exam_participants,priority:1;index:idx_exam_participants_exam" json:"exam_id"`
+	StudentID   uuid.UUID `gorm:"type:uuid;not null;uniqueIndex:uq_exam_participants,priority:2;index:idx_exam_participants_student" json:"student_id"`
 	AssignedVia string    `gorm:"type:varchar(10);not null;default:'individual'" json:"assigned_via"`
 
 	Exam    *Exam    `gorm:"foreignKey:ExamID;references:ID" json:"-"`

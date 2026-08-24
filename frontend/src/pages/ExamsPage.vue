@@ -3,6 +3,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Pencil,
+  Send,
+  Archive,
   CalendarClock,
   ListTree,
   Plus,
@@ -121,6 +123,34 @@ const st = ref({
   token_enabled: false,
 })
 
+const busyExam = ref<string | null>(null)
+
+async function publishExam(e: Exam) {
+  busyExam.value = e.id
+  try {
+    await examService.publish(e.id)
+    ui.toastSuccess('Ujian dipublikasikan — kini terlihat oleh peserta.')
+    await crud.fetchList()
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal publish ujian.'))
+  } finally {
+    busyExam.value = null
+  }
+}
+
+async function closeExam(e: Exam) {
+  busyExam.value = e.id
+  try {
+    await examService.close(e.id)
+    ui.toastSuccess('Ujian ditutup.')
+    await crud.fetchList()
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal menutup ujian.'))
+  } finally {
+    busyExam.value = null
+  }
+}
+
 function openSettings(e: Exam) {
   settingsExam.value = e
   st.value = {
@@ -224,7 +254,24 @@ async function saveSettings() {
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.duration_minutes }} mnt</td>
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.passing_grade }}</td>
               <td class="px-4 py-3">
-                <div class="flex justify-end gap-1">
+                <div class="flex justify-end items-center gap-1">
+                  <BaseButton
+                    v-if="e.status === 'draft'"
+                    size="sm"
+                    :disabled="busyExam === e.id"
+                    @click="publishExam(e)"
+                  >
+                    <Send /> Publish
+                  </BaseButton>
+                  <BaseButton
+                    v-else-if="e.status === 'published'"
+                    variant="outline"
+                    size="sm"
+                    :disabled="busyExam === e.id"
+                    @click="closeExam(e)"
+                  >
+                    <Archive /> Tutup
+                  </BaseButton>
                   <BaseButton variant="ghost" size="icon" title="Jadwal & Peserta" @click="router.push(`/exams/${e.id}/schedule`)">
                     <CalendarClock />
                   </BaseButton>

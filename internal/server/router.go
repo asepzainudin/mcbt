@@ -61,8 +61,11 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	teacherHandler := handler.NewTeacherHandler(teacherUsecase)
 	studentHandler := handler.NewStudentHandler(studentUsecase)
 
+	studentRepo := repository.NewStudentRepository(d.DB)
 	bankRepo := repository.NewQuestionBankRepository(d.DB)
 	questionRepo := repository.NewQuestionRepository(d.DB)
+	examParticipantRepo := repository.NewExamParticipantRepository(d.DB)
+	examScheduleRepo := repository.NewExamScheduleRepository(d.DB)
 	mediaRepo := repository.NewMediaRepository(d.DB)
 
 	storageClient, err := storage.NewClient(context.Background(), d.Cfg)
@@ -95,6 +98,10 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			repository.NewExamParticipantRepository(d.DB), examRepo, classRepo,
 			repository.NewStudentRepository(d.DB),
 		),
+	)
+	attemptRepo := repository.NewExamAttemptRepository(d.DB)
+	candidateExamHandler := handler.NewCandidateExamHandler(
+		usecase.NewCandidateExamUsecase(attemptRepo, studentRepo, examScheduleRepo, examRepo, examParticipantRepo),
 	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
@@ -177,6 +184,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.POST("/questions/import/process", questionImportHandler.Process)
 
 			adminOnly.POST("/media/upload", mediaHandler.Upload)
+			protected.GET("/media/:id/file", mediaHandler.File)
 
 			adminOnly.GET("/questions", questionHandler.List)
 			adminOnly.GET("/questions/:id/preview", questionHandler.Preview)
@@ -192,6 +200,8 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.GET("/exams/:id", examHandler.Get)
 			adminOnly.PUT("/exams/:id", examHandler.Update)
 			adminOnly.PUT("/exams/:id/settings", examHandler.UpdateSettings)
+			adminOnly.PATCH("/exams/:id/publish", examHandler.Publish)
+			adminOnly.PATCH("/exams/:id/close", examHandler.Close)
 			adminOnly.DELETE("/exams/:id", examHandler.Delete)
 
 			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)
@@ -209,6 +219,13 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.POST("/schedules/:id/generate-token", examScheduleHandler.GenerateToken)
 
 			adminOnly.GET("/exams/:id/participants", examParticipantHandler.List)
+			candidate := protected.Group("/candidate", middleware.RequireRoles("student"))
+			{
+				candidate.GET("/exams", candidateExamHandler.ListExams)
+				candidate.POST("/exams/:exam_id/validate-token", candidateExamHandler.ValidateToken)
+				candidate.POST("/exams/:exam_id/start", candidateExamHandler.Start)
+			}
+
 			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)
 			adminOnly.POST("/exams/:id/participants/assign-individual", examParticipantHandler.AssignIndividual)
 			adminOnly.DELETE("/exams/:id/participants/:participant_id", examParticipantHandler.Remove)

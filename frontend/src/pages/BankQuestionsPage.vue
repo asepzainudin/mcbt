@@ -12,6 +12,7 @@ import {
   Search,
   Send,
   Trash2,
+  Upload,
 } from 'lucide-vue-next'
 
 import AppShell from '../components/layout/AppShell.vue'
@@ -197,7 +198,7 @@ function openEdit(q: Question) {
   formScore.value = String(q.score_weight)
   formExplanation.value = q.explanation ?? ''
   formMediaId.value = q.media_id
-  formMediaUrl.value = q.media?.file_path ?? null
+  formMediaUrl.value = q.media?.url ?? null
   formMediaPosition.value = (q.media_position as 'before' | 'after') ?? 'after'
   formAnswerKeys.value = (q.answer_keys ?? []).join('\n')
   optionRows.value = (q.options ?? []).map((o) => ({
@@ -205,7 +206,7 @@ function openEdit(q: Question) {
     text: o.text,
     is_correct: o.is_correct,
     media_id: o.media_id,
-    media_url: o.media?.file_path ?? null,
+    media_url: o.media?.url ?? null,
     uploading: false,
   }))
   fieldErrors.value = {}
@@ -233,14 +234,14 @@ async function onUploadImage(event: Event, target: 'question' | number) {
     if (target === 'question') {
       const media = await uploadMedia(file, 'QUESTION_IMAGE')
       formMediaId.value = media.id
-      formMediaUrl.value = media.file_path
+      formMediaUrl.value = media.url
       ui.toastSuccess('Gambar soal terunggah.')
     } else {
       const row = optionRows.value[target]
       row.uploading = true
       const media = await uploadMedia(file, 'OPTION_IMAGE')
       row.media_id = media.id
-      row.media_url = media.file_path
+      row.media_url = media.url
       ui.toastSuccess('Gambar opsi terunggah.')
     }
   } catch (err) {
@@ -421,14 +422,14 @@ async function publishBank() {
               <td class="px-4 py-3">
                 <img
                   v-if="q.media && q.media_position === 'before'"
-                  :src="q.media.file_path"
+                  :src="q.media.url"
                   class="mb-2 max-h-24 rounded-lg border border-border"
                   alt=""
                 />
                 <div class="prose-sm max-w-lg [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="q.text" />
                 <img
                   v-if="q.media && q.media_position !== 'before'"
-                  :src="q.media.file_path"
+                  :src="q.media.url"
                   class="mt-2 max-h-24 rounded-lg border border-border"
                   alt=""
                 />
@@ -607,14 +608,14 @@ async function publishBank() {
           </div>
           <img
             v-if="previewData.image && previewData.media_position === 'before'"
-            :src="previewData.image.file_path"
+            :src="previewData.image.url"
             class="mb-3 max-h-40 rounded-lg border border-border"
             alt=""
           />
           <div class="prose-sm [&_ol]:list-decimal [&_ol]:pl-5 [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5" v-html="previewData.content_html" />
           <img
             v-if="previewData.image && previewData.media_position !== 'before'"
-            :src="previewData.image.file_path"
+            :src="previewData.image.url"
             class="mt-3 max-h-40 rounded-lg border border-border"
             alt=""
           />
