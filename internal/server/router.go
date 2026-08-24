@@ -76,6 +76,10 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	questionHandler := handler.NewQuestionHandler(
 		usecase.NewQuestionUsecase(questionRepo, bankRepo),
 	)
+	examRepo := repository.NewExamRepository(d.DB)
+	examHandler := handler.NewExamHandler(
+		usecase.NewExamUsecase(examRepo, subjectRepo, ayRepo, bankRepo),
+	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
 	)
@@ -166,6 +170,13 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.DELETE("/questions/:id", questionHandler.Delete)
 			adminOnly.PUT("/questions/:id/options/reorder", questionHandler.ReorderOptions)
 			adminOnly.PUT("/questions/:id/options/:option_id", questionHandler.UpdateOption)
+
+			adminOnly.GET("/exams", examHandler.List)
+			adminOnly.POST("/exams", examHandler.Create)
+			adminOnly.GET("/exams/:id", examHandler.Get)
+			adminOnly.PUT("/exams/:id", examHandler.Update)
+			adminOnly.PUT("/exams/:id/settings", examHandler.UpdateSettings)
+			adminOnly.DELETE("/exams/:id", examHandler.Delete)
 		}
 	}
 

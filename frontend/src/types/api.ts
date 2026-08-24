@@ -184,3 +184,52 @@ export interface QuestionPayload {
   options?: OptionPayload[]
   answer_keys?: string[]
 }
+
+export type ExamStatus = 'draft' | 'published' | 'closed'
+
+export interface Exam {
+  id: string
+  title: string
+  description: string | null
+  subject_id: string
+  academic_year_id: string | null
+  question_bank_id: string | null
+  status: ExamStatus
+  duration_minutes: number
+  max_attempts: number
+  passing_grade: number
+  randomize_questions: boolean
+  randomize_options: boolean
+  allow_backtrack: boolean
+  auto_submit: boolean
+  show_result_immediately: boolean
+  negative_marking: boolean
+  negative_value: number
+  token_enabled: boolean
+  exam_token?: string | null
+  subject?: Subject
+  academic_year?: AcademicYear | null
+  question_bank?: QuestionBank | null
+}
+
+export interface ExamPayload {
+  title: string
+  description?: string | null
+  subject_id: string
+  academic_year_id?: string | null
+  question_bank_id?: string | null
+}
+
+export interface ExamSettingsPayload {
+  duration_minutes: number
+  max_attempts: number
+  passing_grade: number
+  randomize_questions: boolean
+  randomize_options: boolean
+  allow_backtrack: boolean
+  auto_submit: boolean
+  show_result_immediately: boolean
+  negative_marking: boolean
+  negative_value: number
+  token_enabled: boolean
+}

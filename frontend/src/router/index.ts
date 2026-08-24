@@ -54,6 +54,12 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/exams',
+      name: 'exams',
+      component: () => import('../pages/ExamsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/question-banks',
       name: 'question-banks',
       component: () => import('../pages/QuestionBanksPage.vue'),
