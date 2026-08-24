@@ -23,6 +23,8 @@ export interface CrudConfig<T> {
   removeFn: (id: string) => Promise<void>
   toPayload: (form: Record<string, string>) => Record<string, unknown>
   fromItem?: (item: T) => Record<string, string>
+  /** validasi sisi klien sebelum submit; return map field -> pesan */
+  validate?: (form: Record<string, string>, isEditing: boolean) => Record<string, string>
 }
 
 export function useCrudTable<T extends { id: string }>(config: CrudConfig<T>) {
@@ -109,8 +111,17 @@ export function useCrudTable<T extends { id: string }>(config: CrudConfig<T>) {
   }
 
   async function submit() {
-    saving.value = true
     fieldErrors.value = {}
+
+    if (config.validate) {
+      const clientErrors = config.validate(form.value, editingId.value !== null)
+      if (Object.keys(clientErrors).length > 0) {
+        fieldErrors.value = clientErrors
+        return
+      }
+    }
+
+    saving.value = true
     try {
       const payload = config.toPayload(form.value)
       if (editingId.value) {

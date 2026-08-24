@@ -59,6 +59,15 @@ func NewRouter(d RouterDeps) *gin.Engine {
 	teacherHandler := handler.NewTeacherHandler(teacherUsecase)
 	studentHandler := handler.NewStudentHandler(studentUsecase)
 
+	bankRepo := repository.NewQuestionBankRepository(d.DB)
+	questionRepo := repository.NewQuestionRepository(d.DB)
+	bankHandler := handler.NewQuestionBankHandler(
+		usecase.NewQuestionBankUsecase(bankRepo, subjectRepo, questionRepo),
+	)
+	questionHandler := handler.NewQuestionHandler(
+		usecase.NewQuestionUsecase(questionRepo, bankRepo),
+	)
+
 	r.Use(middleware.RequestID())
 	r.Use(middleware.RequestLogger(d.Log))
 	r.Use(middleware.Recovery(d.Log))
@@ -119,6 +128,23 @@ func NewRouter(d RouterDeps) *gin.Engine {
 			adminOnly.POST("/students", studentHandler.Create)
 			adminOnly.PUT("/students/:id", studentHandler.Update)
 			adminOnly.DELETE("/students/:id", studentHandler.Delete)
+
+			adminOnly.GET("/question-banks", bankHandler.List)
+			adminOnly.POST("/question-banks", bankHandler.Create)
+			adminOnly.POST("/question-banks/:id/clone", bankHandler.Clone)
+			adminOnly.PATCH("/question-banks/:id/publish", bankHandler.Publish)
+			adminOnly.PATCH("/question-banks/:id/archive", bankHandler.Archive)
+			adminOnly.PUT("/question-banks/:id", bankHandler.Update)
+			adminOnly.DELETE("/question-banks/:id", bankHandler.Delete)
+
+			adminOnly.GET("/questions", questionHandler.List)
+			adminOnly.GET("/questions/:id/preview", questionHandler.Preview)
+			adminOnly.GET("/questions/:id", questionHandler.Get)
+			adminOnly.POST("/question-banks/:id/questions", questionHandler.CreateInBank)
+			adminOnly.PUT("/questions/:id", questionHandler.Update)
+			adminOnly.DELETE("/questions/:id", questionHandler.Delete)
+			adminOnly.PUT("/questions/:id/options/reorder", questionHandler.ReorderOptions)
+			adminOnly.PUT("/questions/:id/options/:option_id", questionHandler.UpdateOption)
 		}
 	}
 

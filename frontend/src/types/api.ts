@@ -101,3 +101,81 @@ export interface User {
   email: string
   roles: string[]
 }
+
+export type QuestionType =
+  | 'MULTIPLE_CHOICE'
+  | 'TRUE_FALSE'
+  | 'MULTIPLE_ANSWER'
+  | 'ESSAY'
+  | 'SHORT_ANSWER'
+
+export interface MediaRef {
+  id: string
+  file_path: string
+  file_name: string
+  mime_type: string
+}
+
+export type BankStatus = 'draft' | 'published' | 'archived'
+
+export interface QuestionBank {
+  id: string
+  code: string
+  title: string
+  subject_id: string
+  academic_year_id: string | null
+  status: BankStatus
+  description: string | null
+  subject?: Subject
+  academic_year?: AcademicYear | null
+}
+
+export interface QuestionOption {
+  id: string
+  option_key: string
+  label: string
+  text: string
+  content: string
+  is_correct: boolean
+  position: number
+  media_id: string | null
+  media?: MediaRef | null
+}
+
+export interface Question {
+  id: string
+  question_bank_id: string
+  type: QuestionType
+  question_type: string
+  text: string
+  content: string
+  score_weight: number
+  points: number
+  explanation: string | null
+  answer_keys: string[]
+  media_id: string | null
+  options?: QuestionOption[]
+}
+
+export interface BankPayload {
+  code: string
+  title: string
+  subject_id: string
+  academic_year_id?: string | null
+  description?: string | null
+}
+
+export interface OptionPayload {
+  option_key?: string
+  text: string
+  is_correct: boolean
+}
+
+export interface QuestionPayload {
+  type: QuestionType
+  text: string
+  score_weight: number
+  explanation?: string | null
+  options?: OptionPayload[]
+  answer_keys?: string[]
+}

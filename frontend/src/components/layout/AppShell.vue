@@ -14,6 +14,7 @@ import {
   DoorOpen,
   BookOpen,
   Users,
+  FileQuestion,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -45,6 +46,7 @@ const masterDataItems = computed(() => {
     { to: '/subjects', label: 'Mata Pelajaran', icon: BookOpen },
     { to: '/teachers', label: 'Guru', icon: Users },
     { to: '/students', label: 'Siswa', icon: GraduationCap },
+    { to: '/question-banks', label: 'Bank Soal', icon: FileQuestion },
   ]
 })
 

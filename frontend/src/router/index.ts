@@ -54,6 +54,18 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresAdmin: true },
     },
     {
+      path: '/question-banks',
+      name: 'question-banks',
+      component: () => import('../pages/QuestionBanksPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/question-banks/:id',
+      name: 'question-bank-detail',
+      component: () => import('../pages/BankQuestionsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('../pages/NotFoundPage.vue'),

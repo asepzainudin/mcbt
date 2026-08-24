@@ -96,8 +96,21 @@ func mapUnknownError(err error) *apperror.AppError {
 
 	var syntaxErr *json.SyntaxError
 	var typeErr *json.UnmarshalTypeError
-	if errors.As(err, &syntaxErr) || errors.As(err, &typeErr) ||
-		errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+	if errors.As(err, &syntaxErr) {
+		return apperror.BadRequest("Invalid request payload", err)
+	}
+	if errors.As(err, &typeErr) {
+		field := toSnakeCase(typeErr.Field)
+		return &apperror.AppError{
+			Code:    apperror.CodeUnprocessable,
+			Message: "Validasi gagal",
+			Err:     err,
+			Details: map[string]string{
+				field: field + " memiliki tipe data yang tidak sesuai",
+			},
+		}
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
 		return apperror.BadRequest("Invalid request payload", err)
 	}
 
