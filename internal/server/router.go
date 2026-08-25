@@ -88,6 +88,15 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			repository.NewExamSectionRepository(d.DB), examRepo, bankRepo,
 		),
 	)
+	attemptRepo := repository.NewExamAttemptRepository(d.DB)
+	gradingHandler := handler.NewGradingHandler(
+		usecase.NewGradingUsecase(
+			repository.NewGradingRepository(d.DB),
+			repository.NewExamAnswerRepository(d.DB),
+			attemptRepo,
+			examRepo,
+		),
+	)
 	examScheduleHandler := handler.NewExamScheduleHandler(
 		usecase.NewExamScheduleUsecase(
 			repository.NewExamScheduleRepository(d.DB), examRepo,
@@ -99,7 +108,6 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			repository.NewStudentRepository(d.DB),
 		),
 	)
-	attemptRepo := repository.NewExamAttemptRepository(d.DB)
 	candidateExamHandler := handler.NewCandidateExamHandler(
 		usecase.NewCandidateExamUsecase(attemptRepo, studentRepo, examScheduleRepo, examRepo, examParticipantRepo),
 	)
@@ -110,6 +118,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			studentRepo,
 			repository.NewExamSectionRepository(d.DB),
 			examRepo,
+			repository.NewGradingRepository(d.DB),
 		),
 	)
 	questionImportHandler := handler.NewQuestionImportHandler(
@@ -212,6 +221,10 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.PATCH("/exams/:id/publish", examHandler.Publish)
 			adminOnly.PATCH("/exams/:id/close", examHandler.Close)
 			adminOnly.DELETE("/exams/:id", examHandler.Delete)
+
+			adminOnly.POST("/exams/:id/calculate-grades", gradingHandler.CalculateGrades)
+			adminOnly.GET("/exams/:id/ungraded-essays", gradingHandler.UngradedEssays)
+			adminOnly.PUT("/attempts/:id/grade-essay", gradingHandler.GradeEssay)
 
 			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)
 			adminOnly.POST("/exams/:id/sections", examSectionHandler.Create)

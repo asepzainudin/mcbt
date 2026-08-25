@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Pencil,
+  Calculator,
   Send,
   Archive,
   CalendarClock,
@@ -296,6 +297,9 @@ async function saveSettings() {
                     @click="confirmTarget = { exam: e, action: 'close' }"
                   >
                     <Archive /> Tutup
+                  </BaseButton>
+                  <BaseButton variant="ghost" size="icon" title="Penilaian" @click="router.push(`/exams/${e.id}/grading`)">
+                    <Calculator />
                   </BaseButton>
                   <BaseButton variant="ghost" size="icon" title="Jadwal & Peserta" @click="router.push(`/exams/${e.id}/schedule`)">
                     <CalendarClock />

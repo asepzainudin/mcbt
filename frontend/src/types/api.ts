@@ -300,11 +300,17 @@ export interface CandidateExam {
   start_time: string
   end_time: string
   token_enabled: boolean
+  show_result_immediately: boolean
   max_attempts: number
   passing_grade: number
   attempts_used: number
   active_attempt_id: string | null
   active_expires_at: string | null
+  last_status: string | null
+  score: number | null
+  submitted_at: string | null
+  has_essay: boolean
+  essay_ungraded: boolean
 }
 
 export interface StartAttemptResult {

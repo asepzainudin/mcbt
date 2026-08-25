@@ -7,6 +7,7 @@ import {
   FileEdit,
   PlayCircle,
   RefreshCw,
+  Flag,
 } from 'lucide-vue-next'
 
 import AppShell from '../components/layout/AppShell.vue'
@@ -64,8 +65,13 @@ const countdown = (expiresAt: string) => {
   return `${pad(h)}:${pad(m)}:${pad(s)}`
 }
 
+function hasPendingEssay(e: CandidateExam): boolean {
+  return e.has_essay === true && e.essay_ungraded === true
+}
+
 const stateOf = (e: CandidateExam): 'active' | 'available' | 'done' | 'upcoming' => {
   if (e.active_attempt_id) return 'active'
+  if (e.last_status === 'submitted') return 'done'
   if (e.attempts_used >= e.max_attempts) return 'done'
   if (new Date(e.start_time).getTime() > Date.now()) return 'upcoming'
   return 'available'
@@ -212,9 +218,30 @@ const grouped = computed(() => ({
                   {{ fmt(e.start_time) }} → {{ fmt(e.end_time) }} · attempt {{ e.attempts_used }}/{{ e.max_attempts }}
                 </p>
               </div>
-              <BaseBadge :tone="stateOf(e) === 'done' ? 'success' : 'neutral'">
-                {{ stateOf(e) === 'done' ? 'Selesai' : 'Belum dibuka' }}
-              </BaseBadge>
+              <div class="flex flex-wrap items-center gap-2">
+                <template v-if="e.show_result_immediately !== false && e.score !== null && e.last_status === 'submitted'">
+                  <span class="text-sm text-muted-foreground">Nilai:</span>
+                  <span
+                    :class="[
+                      'font-mono text-lg font-bold',
+                      e.score >= e.passing_grade ? 'text-success' : 'text-destructive',
+                    ]"
+                  >{{ e.score }}</span>
+                  <BaseBadge :tone="e.score >= e.passing_grade ? 'success' : 'destructive'">
+                    {{ e.score >= e.passing_grade ? 'Lulus' : 'Belum Lulus' }}
+                  </BaseBadge>
+                </template>
+                <BaseBadge :tone="stateOf(e) === 'done' ? 'success' : 'neutral'">
+                  {{ stateOf(e) === 'done' ? 'Selesai' : 'Belum dibuka' }}
+                </BaseBadge>
+              </div>
+              <p
+                v-if="hasPendingEssay(e)"
+                class="mt-2 flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+              >
+                <Flag class="size-3.5" />
+                Nilai belum termasuk soal esai — menunggu koreksi manual guru.
+              </p>
             </div>
           </div>
         </template>

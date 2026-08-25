@@ -63,4 +63,48 @@ export const examService = {
   async remove(id: string): Promise<void> {
     await api.delete(`/exams/${id}`)
   },
+
+  async gradeEssay(
+    attemptId: string,
+    questionId: string,
+    score: number,
+    feedback?: string | null,
+  ): Promise<{ score: number; feedback: string | null }> {
+    return (
+      await api.put<
+        ApiResponse<{ score: number; feedback: string | null }>
+      >(`/attempts/${attemptId}/grade-essay`, {
+        question_id: questionId,
+        score,
+        feedback: feedback ?? null,
+      })
+    ).data.data
+  },
+
+  async calculateGrades(id: string): Promise<{ attempts_graded: number; questions_graded: number }> {
+    return (
+      await api.post<ApiResponse<{ attempts_graded: number; questions_graded: number }>>(
+        `/exams/${id}/calculate-grades`,
+      )
+    ).data.data
+  },
+
+  async ungradedEssays(id: string) {
+    return (
+      await api.get<
+        ApiResponse<
+          {
+            attempt_id: string
+            answer_id: string
+            student_name: string
+            nis: string
+            question_id: string
+            question_text: string
+            score_weight: number
+            answer_value: string
+          }[]
+        >
+      >(`/exams/${id}/ungraded-essays`)
+    ).data.data ?? []
+  },
 }

@@ -247,6 +247,7 @@ async function doSubmit(auto: boolean) {
     const result = await attemptService.submit(attemptId, true)
     submitted.value = true
     submittedAt.value = result.submitted_at
+    submitModalOpen.value = false
     stopTimers()
     ui.toastSuccess(
       auto ? 'Waktu habis — jawaban dikumpulkan otomatis.' : 'Ujian berhasil dikumpulkan.',

@@ -20,6 +20,7 @@ type AttemptEngineUsecase struct {
 	students *repository.StudentRepository
 	sections *repository.ExamSectionRepository
 	exams    *repository.ExamRepository
+	grading  *repository.GradingRepository
 }
 
 func NewAttemptEngineUsecase(
@@ -28,10 +29,11 @@ func NewAttemptEngineUsecase(
 	students *repository.StudentRepository,
 	sections *repository.ExamSectionRepository,
 	exams *repository.ExamRepository,
+	grading *repository.GradingRepository,
 ) *AttemptEngineUsecase {
 	return &AttemptEngineUsecase{
 		attempts: attempts, answers: answers, students: students,
-		sections: sections, exams: exams,
+		sections: sections, exams: exams, grading: grading,
 	}
 }
 
@@ -276,7 +278,7 @@ func (u *AttemptEngineUsecase) Autosave(ctx context.Context, userID, attemptID u
 
 // Submit finalisasi attempt: status submitted + submitted_at.
 func (u *AttemptEngineUsecase) Submit(ctx context.Context, userID, attemptID uuid.UUID, confirm bool) (*model.ExamAttempt, error) {
-	attempt, _, err := u.resolveAttempt(ctx, userID, attemptID)
+	attempt, exam, err := u.resolveAttempt(ctx, userID, attemptID)
 	if err != nil {
 		return nil, err
 	}
@@ -298,9 +300,40 @@ func (u *AttemptEngineUsecase) Submit(ctx context.Context, userID, attemptID uui
 	if err := u.attempts.FinalizeSubmit(ctx, attempt.ID, now); err != nil {
 		return nil, err
 	}
-	return u.repo_findByID(ctx, attemptID)
+
+	// Tampilkan Hasil Langsung: nilai soal objektif seketika saat submit.
+	if exam.ShowResultImmediately {
+		u.gradeObjectives(ctx, attempt, exam)
+	}
+
+	return u.attempts.FindByID(ctx, attemptID)
 }
 
-func (u *AttemptEngineUsecase) repo_findByID(ctx context.Context, id uuid.UUID) (*model.ExamAttempt, error) {
-	return u.attempts.FindByID(ctx, id)
+// gradeObjectives menilai seluruh jawaban objektif attempt & menyimpan totalnya.
+func (u *AttemptEngineUsecase) gradeObjectives(ctx context.Context, attempt *model.ExamAttempt, exam *model.Exam) {
+	answers, err := u.answers.ListByAttempt(ctx, attempt.ID)
+	if err != nil {
+		return
+	}
+	negative := 0.0
+	if exam.NegativeMarking {
+		negative = exam.NegativeValue
+	}
+	total := 0.0
+	for _, a := range answers {
+		q, err := u.grading.QuestionWithGradingInfo(ctx, a.QuestionID)
+		if err != nil {
+			continue
+		}
+		score, isCorrect, auto := gradeObjective(q, a.AnswerValue, negative)
+		if !auto {
+			continue
+		}
+		via := "auto"
+		if err := u.grading.UpdateGrading(ctx, a.ID, score, isCorrect, nil, via); err != nil {
+			continue
+		}
+		total += score
+	}
+	_ = u.grading.UpdateAttemptScore(ctx, attempt.ID, total)
 }

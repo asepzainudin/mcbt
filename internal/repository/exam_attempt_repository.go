@@ -47,19 +47,25 @@ func (r *ExamAttemptRepository) Create(ctx context.Context, a *model.ExamAttempt
 // student is a participant, joined with the student's attempt count and any
 // active attempt id.
 type CandidateExamRow struct {
-	ExamID        uuid.UUID  `json:"exam_id"`
-	Title         string     `json:"title"`
-	SubjectCode   string     `json:"subject_code"`
-	SubjectName   string     `json:"subject_name"`
-	Duration      int        `json:"duration_minutes"`
-	StartTime     time.Time  `json:"start_time"`
-	EndTime       time.Time  `json:"end_time"`
-	TokenEnabled  bool       `json:"token_enabled"`
-	MaxAttempts   int        `json:"max_attempts"`
-	PassingGrade  float64    `json:"passing_grade"`
-	AttemptsUsed  int64      `json:"attempts_used"`
-	ActiveAttempt *uuid.UUID `json:"active_attempt_id"`
-	ActiveExpires *time.Time `json:"active_expires_at"`
+	ExamID                uuid.UUID  `json:"exam_id"`
+	Title                 string     `json:"title"`
+	SubjectCode           string     `json:"subject_code"`
+	SubjectName           string     `json:"subject_name"`
+	Duration              int        `json:"duration_minutes"`
+	StartTime             time.Time  `json:"start_time"`
+	EndTime               time.Time  `json:"end_time"`
+	TokenEnabled          bool       `json:"token_enabled"`
+	MaxAttempts           int        `json:"max_attempts"`
+	PassingGrade          float64    `json:"passing_grade"`
+	AttemptsUsed          int64      `json:"attempts_used"`
+	ActiveAttempt         *uuid.UUID `json:"active_attempt_id"`
+	ActiveExpires         *time.Time `json:"active_expires_at"`
+	LastStatus            string     `json:"last_status"`
+	Score                 *float64   `json:"score"`
+	SubmittedAt           *time.Time `json:"submitted_at"`
+	ShowResultImmediately bool       `json:"show_result_immediately"`
+	HasEssay              bool       `json:"has_essay"`
+	EssayUngraded         bool       `json:"essay_ungraded"`
 }
 
 func (r *ExamAttemptRepository) ListCandidateExams(ctx context.Context, studentID uuid.UUID) ([]CandidateExamRow, error) {
@@ -75,6 +81,7 @@ func (r *ExamAttemptRepository) ListCandidateExams(ctx context.Context, studentI
 			es.start_time AS start_time,
 			es.end_time AS end_time,
 			e.token_enabled AS token_enabled,
+			e.show_result_immediately AS show_result_immediately,
 			e.max_attempts AS max_attempts,
 			e.passing_grade AS passing_grade,
 			(SELECT count(*) FROM exam_attempts ea
@@ -86,7 +93,30 @@ func (r *ExamAttemptRepository) ListCandidateExams(ctx context.Context, studentI
 			(SELECT ea3.expires_at FROM exam_attempts ea3
 			  WHERE ea3.exam_id = e.id AND ea3.student_id = ep.student_id
 			    AND ea3.status = 'in_progress' AND ea3.expires_at > now()
-			  LIMIT 1) AS active_expires_at
+			  LIMIT 1) AS active_expires_at,
+			(SELECT ea4.status FROM exam_attempts ea4
+			  WHERE ea4.exam_id = e.id AND ea4.student_id = ep.student_id
+			  ORDER BY ea4.attempt_no DESC LIMIT 1) AS last_status,
+			(SELECT ea5.score FROM exam_attempts ea5
+			  WHERE ea5.exam_id = e.id AND ea5.student_id = ep.student_id
+			  ORDER BY ea5.attempt_no DESC LIMIT 1) AS score,
+			(SELECT ea6.submitted_at FROM exam_attempts ea6
+			  WHERE ea6.exam_id = e.id AND ea6.student_id = ep.student_id
+			  ORDER BY ea6.attempt_no DESC LIMIT 1) AS submitted_at,
+			(EXISTS (SELECT 1 FROM questions q
+			  WHERE q.question_bank_id = e.question_bank_id AND q.question_type = 'essay')
+			  OR EXISTS (SELECT 1 FROM exam_section_questions esq
+			  JOIN questions q ON q.id = esq.question_id
+			  JOIN exam_sections es ON es.id = esq.section_id
+			  WHERE es.exam_id = e.id AND q.question_type = 'essay')) AS has_essay,
+			EXISTS (SELECT 1
+			  FROM exam_answers ea
+			  JOIN exam_attempts a ON a.id = ea.attempt_id
+			  JOIN questions q ON q.id = ea.question_id
+			  WHERE a.exam_id = e.id AND a.student_id = ep.student_id
+			    AND a.status = 'submitted'
+			    AND q.question_type = 'essay'
+			    AND ea.graded_at IS NULL) AS essay_ungraded
 		`).
 		Joins("JOIN exams e ON e.id = ep.exam_id").
 		Joins("JOIN exam_schedules es ON es.exam_id = e.id").
