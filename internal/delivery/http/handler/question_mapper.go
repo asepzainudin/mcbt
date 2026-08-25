@@ -78,6 +78,7 @@ func questionResponse(q *model.Question) ginH {
 		"points":           q.ScoreWeight,
 		"explanation":      q.Explanation,
 		"answer_keys":      answerKeysList(q.AnswerKeys),
+		"is_used":          q.IsUsed,
 		"media_id":         q.MediaID,
 		"media":            mediaRefResponse(q.Media),
 		"media_position":   q.MediaPosition,

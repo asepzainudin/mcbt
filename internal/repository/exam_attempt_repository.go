@@ -161,3 +161,11 @@ func (r *ExamAttemptRepository) FinalizeSubmit(ctx context.Context, id uuid.UUID
 	}
 	return nil
 }
+
+func (r *ExamAttemptRepository) CountByExam(ctx context.Context, examID uuid.UUID) (int64, error) {
+	var count int64
+	err := r.db.WithContext(ctx).Model(&model.ExamAttempt{}).
+		Where("exam_id = ?", examID).
+		Count(&count).Error
+	return count, err
+}

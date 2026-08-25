@@ -24,6 +24,7 @@ func (r *GradingRepository) ListSubmittedAttempts(ctx context.Context, examID uu
 	var attempts []model.ExamAttempt
 	err := r.db.WithContext(ctx).
 		Preload("Student").
+		Preload("Student.User").
 		Where("exam_id = ? AND status = ?", examID, model.AttemptStatusSubmitted).
 		Order("submitted_at ASC").
 		Find(&attempts).Error
@@ -155,4 +156,14 @@ func (r *GradingRepository) FindAnswerByIDByAttempt(ctx context.Context, attempt
 		return nil, err
 	}
 	return &a, nil
+}
+
+// ListQuestionsByIDs loads questions (with options) for grading sheet.
+func (r *GradingRepository) ListQuestionsByIDs(ctx context.Context, ids []uuid.UUID) ([]model.Question, error) {
+	var questions []model.Question
+	err := r.db.WithContext(ctx).
+		Preload("Options", func(db *gorm.DB) *gorm.DB { return db.Order("position ASC") }).
+		Where("id IN ?", ids).
+		Find(&questions).Error
+	return questions, err
 }

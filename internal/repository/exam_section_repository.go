@@ -220,3 +220,23 @@ func (r *ExamSectionRepository) QuestionInExam(ctx context.Context, examID, ques
 		Count(&count).Error
 	return count > 0, err
 }
+
+// UsedQuestionIDs returns the set of question ids mapped in any exam section.
+func (r *ExamSectionRepository) UsedQuestionIDs(ctx context.Context, questionIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	set := make(map[uuid.UUID]bool)
+	if len(questionIDs) == 0 {
+		return set, nil
+	}
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).
+		Model(&model.ExamSectionQuestion{}).
+		Where("question_id IN ?", questionIDs).
+		Pluck("question_id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		set[id] = true
+	}
+	return set, nil
+}

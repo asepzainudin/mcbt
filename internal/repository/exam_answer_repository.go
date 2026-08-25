@@ -78,3 +78,22 @@ func (r *ExamAnswerRepository) SetFlag(ctx context.Context, attemptID, questionI
 }
 
 var _ = errors.Is
+
+// AnsweredQuestionIDs returns the set of question ids that have student answers.
+func (r *ExamAnswerRepository) AnsweredQuestionIDs(ctx context.Context, questionIDs []uuid.UUID) (map[uuid.UUID]bool, error) {
+	set := make(map[uuid.UUID]bool)
+	if len(questionIDs) == 0 {
+		return set, nil
+	}
+	var ids []uuid.UUID
+	err := r.db.WithContext(ctx).Model(&model.ExamAnswer{}).
+		Where("question_id IN ?", questionIDs).
+		Pluck("question_id", &ids).Error
+	if err != nil {
+		return nil, err
+	}
+	for _, id := range ids {
+		set[id] = true
+	}
+	return set, nil
+}

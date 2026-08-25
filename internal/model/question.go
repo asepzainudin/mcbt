@@ -23,6 +23,8 @@ type Question struct {
 	AnswerKeys     *string    `gorm:"type:text" json:"answer_keys,omitempty"`
 	MediaPosition  string     `gorm:"type:varchar(10);not null;default:'after'" json:"media_position"`
 
+	IsUsed bool `gorm:"-" json:"is_used"`
+
 	QuestionBank QuestionBank `gorm:"foreignKey:QuestionBankID;references:ID" json:"question_bank,omitempty"`
 	Media        *Media       `gorm:"foreignKey:MediaID;references:ID" json:"media,omitempty"`
 	Options      []Option     `gorm:"foreignKey:QuestionID;references:ID" json:"options,omitempty"`

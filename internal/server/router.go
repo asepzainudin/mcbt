@@ -44,6 +44,8 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	ayRepo := repository.NewAcademicYearRepository(d.DB)
 	classRepo := repository.NewClassRepository(d.DB)
 	subjectRepo := repository.NewSubjectRepository(d.DB)
+	examSectionRepo := repository.NewExamSectionRepository(d.DB)
+	attemptRepo := repository.NewExamAttemptRepository(d.DB)
 
 	cookies := handler.NewCookieManager(d.Cfg)
 	authHandler := handler.NewAuthHandler(authUC, cookies)
@@ -66,6 +68,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	questionRepo := repository.NewQuestionRepository(d.DB)
 	examParticipantRepo := repository.NewExamParticipantRepository(d.DB)
 	examScheduleRepo := repository.NewExamScheduleRepository(d.DB)
+	_ = examSectionRepo
 	mediaRepo := repository.NewMediaRepository(d.DB)
 
 	storageClient, err := storage.NewClient(context.Background(), d.Cfg)
@@ -77,18 +80,17 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 		usecase.NewQuestionBankUsecase(bankRepo, subjectRepo, questionRepo),
 	)
 	questionHandler := handler.NewQuestionHandler(
-		usecase.NewQuestionUsecase(questionRepo, bankRepo),
+		usecase.NewQuestionUsecase(questionRepo, bankRepo, examSectionRepo, repository.NewExamAnswerRepository(d.DB)),
 	)
 	examRepo := repository.NewExamRepository(d.DB)
 	examHandler := handler.NewExamHandler(
-		usecase.NewExamUsecase(examRepo, subjectRepo, ayRepo, bankRepo),
+		usecase.NewExamUsecase(examRepo, subjectRepo, ayRepo, bankRepo, attemptRepo),
 	)
 	examSectionHandler := handler.NewExamSectionHandler(
 		usecase.NewExamSectionUsecase(
 			repository.NewExamSectionRepository(d.DB), examRepo, bankRepo,
 		),
 	)
-	attemptRepo := repository.NewExamAttemptRepository(d.DB)
 	gradingHandler := handler.NewGradingHandler(
 		usecase.NewGradingUsecase(
 			repository.NewGradingRepository(d.DB),
@@ -224,6 +226,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 
 			adminOnly.POST("/exams/:id/calculate-grades", gradingHandler.CalculateGrades)
 			adminOnly.GET("/exams/:id/ungraded-essays", gradingHandler.UngradedEssays)
+			adminOnly.GET("/exams/:id/grading", gradingHandler.GradingSheet)
 			adminOnly.PUT("/attempts/:id/grade-essay", gradingHandler.GradeEssay)
 
 			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)

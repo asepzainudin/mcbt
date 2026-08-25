@@ -461,6 +461,7 @@ async function publishBank() {
               </td>
               <td class="px-4 py-3">
                 <BaseBadge :tone="typeTone[q.type] ?? 'neutral'">{{ typeLabel[q.type] ?? q.type }}</BaseBadge>
+                <BaseBadge v-if="q.is_used" tone="warning" class="ml-1">digunakan ujian</BaseBadge>
                 <p class="mt-1 text-xs text-muted-foreground">bobot {{ q.score_weight }}</p>
               </td>
               <td class="px-4 py-3">
@@ -468,12 +469,14 @@ async function publishBank() {
                   <BaseButton variant="ghost" size="icon" title="Preview" @click="openPreview(q)">
                     <Eye />
                   </BaseButton>
-                  <BaseButton variant="ghost" size="icon" title="Edit" @click="openEdit(q)">
-                    <Pencil />
-                  </BaseButton>
-                  <BaseButton variant="ghost" size="icon" title="Hapus" @click="deleteTarget = q">
-                    <Trash2 class="text-destructive" />
-                  </BaseButton>
+                  <template v-if="!q.is_used">
+                    <BaseButton variant="ghost" size="icon" title="Edit" @click="openEdit(q)">
+                      <Pencil />
+                    </BaseButton>
+                    <BaseButton variant="ghost" size="icon" title="Hapus" @click="deleteTarget = q">
+                      <Trash2 class="text-destructive" />
+                    </BaseButton>
+                  </template>
                 </div>
               </td>
             </tr>

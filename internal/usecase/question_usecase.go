@@ -32,12 +32,41 @@ type QuestionInput struct {
 }
 
 type QuestionUsecase struct {
-	repo  *repository.QuestionRepository
-	banks *repository.QuestionBankRepository
+	repo     *repository.QuestionRepository
+	banks    *repository.QuestionBankRepository
+	sections *repository.ExamSectionRepository
+	answers  *repository.ExamAnswerRepository
 }
 
-func NewQuestionUsecase(repo *repository.QuestionRepository, banks *repository.QuestionBankRepository) *QuestionUsecase {
-	return &QuestionUsecase{repo: repo, banks: banks}
+func NewQuestionUsecase(
+	repo *repository.QuestionRepository,
+	banks *repository.QuestionBankRepository,
+	sections *repository.ExamSectionRepository,
+	answers *repository.ExamAnswerRepository,
+) *QuestionUsecase {
+	return &QuestionUsecase{repo: repo, banks: banks, sections: sections, answers: answers}
+}
+
+var errQuestionInUse = errors.New("soal sudah digunakan ujian")
+
+// ensureNotUsed menolak perubahan/penghapusan soal yang sudah digunakan ujian
+// (termapping di section maupun sudah dijawab siswa).
+func (u *QuestionUsecase) ensureNotUsed(ctx context.Context, questionID uuid.UUID) error {
+	mapped, err := u.sections.UsedQuestionIDs(ctx, []uuid.UUID{questionID})
+	if err != nil {
+		return apperror.Internal(err)
+	}
+	if mapped[questionID] {
+		return apperror.New(409, "Soal sudah digunakan ujian. Mohon buat soal baru!", errQuestionInUse)
+	}
+	answered, err := u.answers.AnsweredQuestionIDs(ctx, []uuid.UUID{questionID})
+	if err != nil {
+		return apperror.Internal(err)
+	}
+	if answered[questionID] {
+		return apperror.New(409, "Soal sudah digunakan ujian. Mohon buat soal baru!", errQuestionInUse)
+	}
+	return nil
 }
 
 var validQuestionTypes = map[string]bool{
@@ -188,6 +217,22 @@ func (u *QuestionUsecase) List(ctx context.Context, p repository.QuestionListPar
 	if err != nil {
 		return nil, 0, apperror.Internal(err)
 	}
+
+	ids := make([]uuid.UUID, 0, len(result.Items))
+	for _, q := range result.Items {
+		ids = append(ids, q.ID)
+	}
+	mappedSet, err := u.sections.UsedQuestionIDs(ctx, ids)
+	if err != nil {
+		return nil, 0, apperror.Internal(err)
+	}
+	answeredSet, err := u.answers.AnsweredQuestionIDs(ctx, ids)
+	if err != nil {
+		return nil, 0, apperror.Internal(err)
+	}
+	for i := range result.Items {
+		result.Items[i].IsUsed = mappedSet[result.Items[i].ID] || answeredSet[result.Items[i].ID]
+	}
 	return result.Items, result.TotalItems, nil
 }
 
@@ -245,6 +290,9 @@ func (u *QuestionUsecase) Update(ctx context.Context, id uuid.UUID, in QuestionI
 		}
 		return nil, apperror.Internal(err)
 	}
+	if err := u.ensureNotUsed(ctx, id); err != nil {
+		return nil, err
+	}
 
 	// Spec PUT tidak mengirim bank_id: pertahankan bank asal bila tidak dikirim.
 	if in.BankID == uuid.Nil {
@@ -291,6 +339,9 @@ func (u *QuestionUsecase) Update(ctx context.Context, id uuid.UUID, in QuestionI
 }
 
 func (u *QuestionUsecase) Delete(ctx context.Context, id uuid.UUID) error {
+	if err := u.ensureNotUsed(ctx, id); err != nil {
+		return err
+	}
 	err := u.repo.Delete(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {

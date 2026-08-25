@@ -267,6 +267,7 @@ async function saveSettings() {
               </td>
               <td class="px-4 py-3">
                 <BaseBadge :tone="statusTone(e.status)">{{ e.status }}</BaseBadge>
+                <BaseBadge v-if="e.attempts_count > 0" tone="info" class="ml-1">{{ e.attempts_count }} peserta uji</BaseBadge>
               </td>
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.duration_minutes }} mnt</td>
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.passing_grade }}</td>
@@ -313,7 +314,13 @@ async function saveSettings() {
                   <BaseButton variant="ghost" size="icon" title="Edit" @click="crud.openEdit(e)">
                     <Pencil />
                   </BaseButton>
-                  <BaseButton variant="ghost" size="icon" title="Hapus" @click="crud.askDelete(e)">
+                  <BaseButton
+                    v-if="e.attempts_count === 0"
+                    variant="ghost"
+                    size="icon"
+                    title="Hapus"
+                    @click="crud.askDelete(e)"
+                  >
                     <Trash2 class="text-destructive" />
                   </BaseButton>
                 </div>

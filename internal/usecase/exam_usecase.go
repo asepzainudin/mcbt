@@ -18,6 +18,7 @@ type ExamUsecase struct {
 	subjects *repository.SubjectRepository
 	ays      *repository.AcademicYearRepository
 	banks    *repository.QuestionBankRepository
+	attempts *repository.ExamAttemptRepository
 }
 
 func NewExamUsecase(
@@ -25,8 +26,9 @@ func NewExamUsecase(
 	subjects *repository.SubjectRepository,
 	ays *repository.AcademicYearRepository,
 	banks *repository.QuestionBankRepository,
+	attempts *repository.ExamAttemptRepository,
 ) *ExamUsecase {
-	return &ExamUsecase{repo: repo, subjects: subjects, ays: ays, banks: banks}
+	return &ExamUsecase{repo: repo, subjects: subjects, ays: ays, banks: banks, attempts: attempts}
 }
 
 type ExamInput struct {
@@ -118,6 +120,12 @@ func (u *ExamUsecase) List(ctx context.Context, p repository.ExamListParams) ([]
 	result, err := u.repo.List(ctx, p)
 	if err != nil {
 		return nil, 0, apperror.Internal(err)
+	}
+	for i := range result.Items {
+		count, err := u.attempts.CountByExam(ctx, result.Items[i].ID)
+		if err == nil {
+			result.Items[i].AttemptsCount = count
+		}
 	}
 	return result.Items, result.TotalItems, nil
 }
@@ -240,7 +248,14 @@ func (u *ExamUsecase) Close(ctx context.Context, id uuid.UUID) (*model.Exam, err
 }
 
 func (u *ExamUsecase) Delete(ctx context.Context, id uuid.UUID) error {
-	err := u.repo.Delete(ctx, id)
+	used, err := u.attempts.CountByExam(ctx, id)
+	if err != nil {
+		return apperror.Internal(err)
+	}
+	if used > 0 {
+		return apperror.New(409, "Ujian sudah digunakan peserta dan tidak dapat dihapus", nil)
+	}
+	err = u.repo.Delete(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("Ujian tidak ditemukan", err)

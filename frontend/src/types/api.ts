@@ -158,6 +158,7 @@ export interface Question {
   media_position: 'before' | 'after'
   media?: MediaRef | null
   options?: QuestionOption[]
+  is_used: boolean
 }
 
 export interface BankPayload {
@@ -207,6 +208,7 @@ export interface Exam {
   negative_marking: boolean
   negative_value: number
   token_enabled: boolean
+  attempts_count: number
   exam_token?: string | null
   subject?: Subject
   academic_year?: AcademicYear | null

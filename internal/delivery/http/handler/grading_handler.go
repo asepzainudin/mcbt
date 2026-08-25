@@ -88,3 +88,18 @@ func (h *GradingHandler) GradeEssay(c *gin.Context) {
 		"graded_via":  answer.GradedVia,
 	})
 }
+
+// GradingSheet: seluruh jawaban per siswa untuk satu ujian.
+func (h *GradingHandler) GradingSheet(c *gin.Context) {
+	examID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(apperror.BadRequest("ID ujian tidak valid", err))
+		return
+	}
+	students, err := h.uc.ExamGradingSheet(c.Request.Context(), examID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Lembar penilaian", students)
+}

@@ -31,6 +31,8 @@ type Exam struct {
 	TokenEnabled          bool       `gorm:"not null;default:false" json:"token_enabled"`
 	ExamToken             *string    `gorm:"type:varchar(10);uniqueIndex:uq_exams_token" json:"exam_token,omitempty"`
 
+	AttemptsCount int64 `gorm:"-" json:"attempts_count"`
+
 	Subject      Subject       `gorm:"foreignKey:SubjectID;references:ID" json:"subject,omitempty"`
 	AcademicYear *AcademicYear `gorm:"foreignKey:AcademicYearID;references:ID" json:"academic_year,omitempty"`
 	QuestionBank *QuestionBank `gorm:"foreignKey:QuestionBankID;references:ID" json:"question_bank,omitempty"`
