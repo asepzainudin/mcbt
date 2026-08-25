@@ -237,6 +237,9 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 				candidate.POST("/attempts/:id/answers", attemptEngineHandler.SaveAnswer)
 				candidate.POST("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Flag)
 				candidate.DELETE("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Unflag)
+				candidate.POST("/attempts/:id/heartbeat", attemptEngineHandler.Heartbeat)
+				candidate.POST("/attempts/:id/autosave", attemptEngineHandler.Autosave)
+				candidate.POST("/attempts/:id/submit", attemptEngineHandler.Submit)
 			}
 
 			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)

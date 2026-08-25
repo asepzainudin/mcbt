@@ -123,12 +123,25 @@ func (u *ExamParticipantUsecase) List(ctx context.Context, examID uuid.UUID) ([]
 	return participants, nil
 }
 
+// Remove menghapus peserta BESERTA seluruh attempt & jawabannya pada ujian ini,
+// sehingga saat di-assign kembali siswa dapat mengerjakan dari awal.
 func (u *ExamParticipantUsecase) Remove(ctx context.Context, examID, participantID uuid.UUID) error {
 	if err := u.examExists(ctx, examID); err != nil {
 		return err
 	}
-	err := u.participants.Delete(ctx, participantID)
+
+	participant, err := u.participants.FindByID(ctx, participantID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return apperror.NotFound("Peserta tidak ditemukan", err)
+		}
+		return apperror.Internal(err)
+	}
+	if participant.ExamID != examID {
+		return apperror.NotFound("Peserta tidak ditemukan pada ujian ini", nil)
+	}
+
+	if err := u.participants.RemoveWithCleanup(ctx, examID, participantID, participant.StudentID); err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return apperror.NotFound("Peserta tidak ditemukan", err)
 		}

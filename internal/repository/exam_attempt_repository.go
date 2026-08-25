@@ -113,3 +113,21 @@ func (r *ExamAttemptRepository) MarkExpired(ctx context.Context, id uuid.UUID) e
 		Where("id = ? AND status = ?", id, model.AttemptStatusInProgress).
 		Update("status", model.AttemptStatusExpired).Error
 }
+
+// FinalizeSubmit sets status submitted + submitted_at.
+func (r *ExamAttemptRepository) FinalizeSubmit(ctx context.Context, id uuid.UUID, submittedAt time.Time) error {
+	res := r.db.WithContext(ctx).Model(&model.ExamAttempt{}).
+		Where("id = ?", id).
+		Updates(map[string]any{
+			"status":       model.AttemptStatusSubmitted,
+			"submitted_at": submittedAt,
+			"updated_at":   submittedAt,
+		})
+	if res.Error != nil {
+		return TranslateDBError(res.Error, "")
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
+}

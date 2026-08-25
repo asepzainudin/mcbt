@@ -104,3 +104,22 @@ func (r *ExamParticipantRepository) StudentsExist(ctx context.Context, ids []uui
 		Count(&count).Error
 	return int(count) == len(ids), err
 }
+
+// RemoveWithCleanup deletes the participant together with all their attempts
+// (answers cascade via exam_attempts FK) so they can retake the exam fresh.
+func (r *ExamParticipantRepository) RemoveWithCleanup(ctx context.Context, examID, participantID, studentID uuid.UUID) error {
+	return TranslateDBError(r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("exam_id = ? AND student_id = ?", examID, studentID).
+			Delete(&model.ExamAttempt{}).Error; err != nil {
+			return err
+		}
+		res := tx.Delete(&model.ExamParticipant{}, "id = ?", participantID)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return gorm.ErrRecordNotFound
+		}
+		return nil
+	}), "")
+}

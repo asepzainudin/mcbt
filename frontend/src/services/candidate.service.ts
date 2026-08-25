@@ -36,7 +36,7 @@ export interface AttemptQuestion {
 }
 
 export interface AttemptSheet {
-  attempt: { status: string; expires_at: string; attempt_no: number }
+  attempt: { status: string; expires_at: string; attempt_no: number; submitted_at: string | null }
   questions: AttemptQuestion[]
 }
 
@@ -53,6 +53,41 @@ export const attemptService = {
       await api.post<ApiResponse<{ answered_at: string; question_id: string }>>(
         `/candidate/attempts/${attemptId}/answers`,
         { question_id: questionId, answer_value: answerValue, client_timestamp },
+      )
+    ).data.data
+  },
+
+  async heartbeat(attemptId: string) {
+    return (
+      await api.post<
+        ApiResponse<{
+          server_time: string
+          remaining_seconds: number
+          is_expired: boolean
+          attempt_status: string
+          submitted_at: string | null
+        }>
+      >(`/candidate/attempts/${attemptId}/heartbeat`)
+    ).data.data
+  },
+
+  async autosave(
+    attemptId: string,
+    answers: { question_id: string; value: string }[],
+  ): Promise<{ saved_count: number }> {
+    return (
+      await api.post<ApiResponse<{ saved_count: number }>>(
+        `/candidate/attempts/${attemptId}/autosave`,
+        { answers },
+      )
+    ).data.data
+  },
+
+  async submit(attemptId: string, confirm = true): Promise<StartAttemptResult & { status: string; submitted_at: string | null }> {
+    return (
+      await api.post<ApiResponse<StartAttemptResult & { status: string; submitted_at: string | null }>>(
+        `/candidate/attempts/${attemptId}/submit`,
+        { confirm_submit: confirm },
       )
     ).data.data
   },

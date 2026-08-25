@@ -125,28 +125,44 @@ const st = ref({
 
 const busyExam = ref<string | null>(null)
 
-async function publishExam(e: Exam) {
-  busyExam.value = e.id
-  try {
-    await examService.publish(e.id)
-    ui.toastSuccess('Ujian dipublikasikan — kini terlihat oleh peserta.')
-    await crud.fetchList()
-  } catch (err) {
-    ui.toastError(apiErrorMessage(err, 'Gagal publish ujian.'))
-  } finally {
-    busyExam.value = null
-  }
-}
+// ---- konfirmasi perubahan status ----
+const confirmTarget = ref<{ exam: Exam; action: 'publish' | 'close' } | null>(null)
+const confirming = ref(false)
 
-async function closeExam(e: Exam) {
-  busyExam.value = e.id
+const confirmTitle = computed(() =>
+  confirmTarget.value?.action === 'publish' ? 'Publish Ujian?' : 'Tutup Ujian?',
+)
+
+const confirmMessage = computed(() => {
+  if (!confirmTarget.value) return ''
+  const { exam, action } = confirmTarget.value
+  if (action === 'publish') {
+    return exam.status === 'closed'
+      ? `Ujian "${exam.title}" sebelumnya ditutup. Publish kembali agar peserta susulan dapat mengikuti ujian?`
+      : `Publikasikan ujian "${exam.title}"? Ujian akan terlihat oleh peserta yang terdaftar.`
+  }
+  return `Tutup ujian "${exam.title}"? Peserta tidak lagi dapat memulai ujian.`
+})
+
+async function doStatusChange() {
+  if (!confirmTarget.value) return
+  const { exam, action } = confirmTarget.value
+  confirming.value = true
+  busyExam.value = exam.id
   try {
-    await examService.close(e.id)
-    ui.toastSuccess('Ujian ditutup.')
+    if (action === 'publish') {
+      await examService.publish(exam.id)
+      ui.toastSuccess('Ujian dipublikasikan — kini terlihat oleh peserta.')
+    } else {
+      await examService.close(exam.id)
+      ui.toastSuccess('Ujian ditutup.')
+    }
+    confirmTarget.value = null
     await crud.fetchList()
   } catch (err) {
-    ui.toastError(apiErrorMessage(err, 'Gagal menutup ujian.'))
+    ui.toastError(apiErrorMessage(err, 'Gagal mengubah status ujian.'))
   } finally {
+    confirming.value = false
     busyExam.value = null
   }
 }
@@ -259,16 +275,25 @@ async function saveSettings() {
                     v-if="e.status === 'draft'"
                     size="sm"
                     :disabled="busyExam === e.id"
-                    @click="publishExam(e)"
+                    @click="confirmTarget = { exam: e, action: 'publish' }"
                   >
                     <Send /> Publish
                   </BaseButton>
                   <BaseButton
-                    v-else-if="e.status === 'published'"
+                    v-else-if="e.status === 'closed'"
                     variant="outline"
                     size="sm"
                     :disabled="busyExam === e.id"
-                    @click="closeExam(e)"
+                    @click="confirmTarget = { exam: e, action: 'publish' }"
+                  >
+                    <Send /> Publish Kembali
+                  </BaseButton>
+                  <BaseButton
+                    v-else
+                    variant="outline"
+                    size="sm"
+                    :disabled="busyExam === e.id"
+                    @click="confirmTarget = { exam: e, action: 'close' }"
                   >
                     <Archive /> Tutup
                   </BaseButton>
@@ -298,6 +323,21 @@ async function saveSettings() {
           </div>
         </template>
       </template>
+
+      <!-- KONFIRMASI STATUS -->
+      <BaseModal :open="!!confirmTarget" :title="confirmTitle" @close="confirmTarget = null">
+        <p class="text-sm leading-relaxed text-muted-foreground">{{ confirmMessage }}</p>
+        <template #footer>
+          <BaseButton variant="outline" @click="confirmTarget = null">Batal</BaseButton>
+          <BaseButton
+            :variant="confirmTarget?.action === 'close' ? 'destructive' : 'default'"
+            :loading="confirming"
+            @click="doStatusChange"
+          >
+            <Send /> Ya, Lanjutkan
+          </BaseButton>
+        </template>
+      </BaseModal>
 
       <!-- FORM CORE -->
       <BaseModal :open="crud.formOpen.value" :title="crud.isEditing.value ? 'Edit Ujian' : 'Tambah Ujian'" @close="crud.closeForm()">

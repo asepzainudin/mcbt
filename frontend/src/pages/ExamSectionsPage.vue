@@ -137,6 +137,37 @@ async function deleteSection(s: ExamSection) {
   }
 }
 
+// ---- konfirmasi hapus ----
+const deleteSectionTarget = ref<ExamSection | null>(null)
+const deletingSection = ref(false)
+
+function askDeleteSection(s: ExamSection) {
+  deleteSectionTarget.value = s
+}
+
+async function confirmDeleteSection() {
+  if (!deleteSectionTarget.value) return
+  deletingSection.value = true
+  try {
+    await deleteSection(deleteSectionTarget.value)
+    deleteSectionTarget.value = null
+  } finally {
+    deletingSection.value = false
+  }
+}
+
+const unmapTarget = ref<SectionQuestion | null>(null)
+
+function askUnmap(q: SectionQuestion) {
+  unmapTarget.value = q
+}
+
+async function confirmUnmap() {
+  if (!unmapTarget.value || !mapTarget.value) return
+  await unmapQuestion(unmapTarget.value)
+  unmapTarget.value = null
+}
+
 // ---- mapping soal ----
 const mapTarget = ref<ExamSection | null>(null)
 const mapping = ref(false)
@@ -250,7 +281,7 @@ async function unmapQuestion(q: SectionQuestion) {
                 <BaseButton variant="ghost" size="icon" aria-label="Edit" @click="openEdit(s)">
                   <Pencil />
                 </BaseButton>
-                <BaseButton variant="ghost" size="icon" aria-label="Hapus" @click="deleteSection(s)">
+                <BaseButton variant="ghost" size="icon" aria-label="Hapus" @click="askDeleteSection(s)">
                   <Trash2 class="text-destructive" />
                 </BaseButton>
               </div>
@@ -269,6 +300,36 @@ async function unmapQuestion(q: SectionQuestion) {
             <BaseButton type="submit" :loading="saving">Simpan</BaseButton>
           </div>
         </form>
+      </BaseModal>
+
+      <!-- KONFIRMASI HAPUS SECTION -->
+      <BaseModal :open="!!deleteSectionTarget" title="Hapus Section?" @close="deleteSectionTarget = null">
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          Hapus section
+          <span class="font-semibold text-foreground">{{ deleteSectionTarget?.name }}</span>?
+          Seluruh mapping soal di section ini juga akan terhapus.
+        </p>
+        <template #footer>
+          <BaseButton variant="outline" @click="deleteSectionTarget = null">Batal</BaseButton>
+          <BaseButton variant="destructive" :loading="deletingSection" @click="confirmDeleteSection">
+            <Trash2 /> Ya, Hapus Section
+          </BaseButton>
+        </template>
+      </BaseModal>
+
+      <!-- KONFIRMASI LEPAS MAPPING -->
+      <BaseModal :open="!!unmapTarget" title="Lepas Soal dari Section?" @close="unmapTarget = null">
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          Keluarkan soal
+          <span class="font-semibold text-foreground">"{{ unmapTarget?.text }}"</span>
+          dari section ini?
+        </p>
+        <template #footer>
+          <BaseButton variant="outline" @click="unmapTarget = null">Batal</BaseButton>
+          <BaseButton variant="destructive" @click="confirmUnmap">
+            <Unlink /> Ya, Keluarkan
+          </BaseButton>
+        </template>
       </BaseModal>
 
       <!-- MAPPING MODAL -->
@@ -322,7 +383,7 @@ async function unmapQuestion(q: SectionQuestion) {
                   <BaseBadge tone="outline">{{ typeLabel[q.type] ?? q.type }}</BaseBadge>
                   <span class="truncate">{{ q.text }}</span>
                 </span>
-                <BaseButton variant="ghost" size="icon" aria-label="Keluarkan" @click="unmapQuestion(q)">
+                <BaseButton variant="ghost" size="icon" aria-label="Keluarkan" @click="askUnmap(q)">
                   <Unlink class="text-destructive" />
                 </BaseButton>
               </li>

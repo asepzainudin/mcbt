@@ -14,6 +14,7 @@ import AppShell from '../components/layout/AppShell.vue'
 import BaseBadge from '../components/ui/BaseBadge.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import BaseInput from '../components/ui/BaseInput.vue'
+import BaseModal from '../components/ui/BaseModal.vue'
 import BaseSearchSelect from '../components/ui/BaseSearchSelect.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
@@ -44,6 +45,9 @@ const assigningClass = ref(false)
 const students = ref<{ id: string; name: string; nis: string }[]>([])
 const selectedStudent = ref('')
 const assigningIndividual = ref(false)
+const confirmDeleteSchedule = ref(false)
+const removeParticipantTarget = ref<{ id: string; name: string } | null>(null)
+const removingParticipant = ref(false)
 
 function toLocalInput(iso: string | null | undefined): string {
   if (!iso) return ''
@@ -185,13 +189,24 @@ async function assignIndividual() {
   }
 }
 
-async function removeParticipant(p: { id: string; name: string }) {
+function askRemoveParticipant(p: { id: string; name: string }) {
+  removeParticipantTarget.value = p
+}
+
+async function confirmRemoveParticipant() {
+  if (!removeParticipantTarget.value) return
+  removingParticipant.value = true
   try {
-    await participantService.remove(examId, p.id)
-    ui.toastSuccess(`${p.name} dikeluarkan dari ujian.`)
-    participants.value = participants.value.filter((x) => x.id !== p.id)
+    await participantService.remove(examId, removeParticipantTarget.value.id)
+    ui.toastSuccess(`${removeParticipantTarget.value.name} dikeluarkan dari ujian.`)
+    participants.value = participants.value.filter(
+      (x) => x.id !== removeParticipantTarget.value?.id,
+    )
+    removeParticipantTarget.value = null
   } catch {
     ui.toastError('Gagal menghapus peserta.')
+  } finally {
+    removingParticipant.value = false
   }
 }
 </script>
@@ -231,7 +246,7 @@ async function removeParticipant(p: { id: string; name: string }) {
             <BaseButton variant="outline" @click="generateToken">
               <RefreshCw /> Generate / Reset Token
             </BaseButton>
-            <BaseButton v-if="scheduleId" variant="ghost" class="text-destructive" @click="deleteSchedule">
+            <BaseButton v-if="scheduleId" variant="ghost" class="text-destructive" @click="confirmDeleteSchedule = true">
               <Trash2 /> Hapus Jadwal
             </BaseButton>
           </div>
@@ -297,7 +312,7 @@ async function removeParticipant(p: { id: string; name: string }) {
                 </span>
                 <span class="flex items-center gap-2">
                   <BaseBadge :tone="p.assigned_via === 'class' ? 'info' : 'neutral'">{{ p.assigned_via }}</BaseBadge>
-                  <BaseButton variant="ghost" size="icon" aria-label="Hapus" @click="removeParticipant(p)">
+                  <BaseButton variant="ghost" size="icon" aria-label="Hapus" @click="askRemoveParticipant(p)">
                     <Trash2 class="text-destructive" />
                   </BaseButton>
                 </span>
@@ -306,6 +321,38 @@ async function removeParticipant(p: { id: string; name: string }) {
           </div>
         </section>
       </template>
+
+      <!-- KONFIRMASI HAPUS JADWAL -->
+      <BaseModal :open="confirmDeleteSchedule" title="Hapus Jadwal Ujian?" @close="confirmDeleteSchedule = false">
+        <p class="text-sm text-muted-foreground">
+          Jadwal ujian akan dihapus (token jadwal ini juga tidak berlaku). Data peserta tidak ikut terhapus.
+        </p>
+        <template #footer>
+          <BaseButton variant="outline" @click="confirmDeleteSchedule = false">Batal</BaseButton>
+          <BaseButton variant="destructive" @click="deleteSchedule(); confirmDeleteSchedule = false">
+            <Trash2 /> Ya, Hapus Jadwal
+          </BaseButton>
+        </template>
+      </BaseModal>
+
+      <!-- KONFIRMASI KELUARKAN PESERTA -->
+      <BaseModal
+        :open="!!removeParticipantTarget"
+        title="Keluarkan Peserta?"
+        @close="removeParticipantTarget = null"
+      >
+        <p class="text-sm leading-relaxed text-muted-foreground">
+          Keluarkan
+          <span class="font-semibold text-foreground">{{ removeParticipantTarget?.name }}</span>
+          dari ujian ini? Seluruh riwayat attempt & jawabannya pada ujian ini juga akan dihapus.
+        </p>
+        <template #footer>
+          <BaseButton variant="outline" @click="removeParticipantTarget = null">Batal</BaseButton>
+          <BaseButton variant="destructive" :loading="removingParticipant" @click="confirmRemoveParticipant">
+            <Trash2 /> Ya, Keluarkan
+          </BaseButton>
+        </template>
+      </BaseModal>
     </div>
   </AppShell>
 </template>

@@ -95,7 +95,7 @@ func (h *AttemptEngineHandler) GetQuestions(c *gin.Context) {
 		data = append(data, attemptQuestionResponse(item))
 	}
 	response.Success(c, http.StatusOK, "Lembar soal", ginH{
-		"attempt":  attemptResponse(attempt),
+		"attempt":   attemptResponse(attempt),
 		"questions": data,
 	})
 }

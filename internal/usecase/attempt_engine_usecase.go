@@ -15,11 +15,11 @@ import (
 )
 
 type AttemptEngineUsecase struct {
-	attempts  *repository.ExamAttemptRepository
-	answers   *repository.ExamAnswerRepository
-	students  *repository.StudentRepository
-	sections  *repository.ExamSectionRepository
-	exams     *repository.ExamRepository
+	attempts *repository.ExamAttemptRepository
+	answers  *repository.ExamAnswerRepository
+	students *repository.StudentRepository
+	sections *repository.ExamSectionRepository
+	exams    *repository.ExamRepository
 }
 
 func NewAttemptEngineUsecase(
@@ -107,24 +107,24 @@ func (u *AttemptEngineUsecase) questionInExam(ctx context.Context, exam *model.E
 }
 
 type AttemptOption struct {
-	OptionKey string      `json:"option_key"`
-	Text      string      `json:"text"`
+	OptionKey string       `json:"option_key"`
+	Text      string       `json:"text"`
 	Media     *model.Media `json:"media,omitempty"`
 }
 
 type AttemptQuestionItem struct {
-	QuestionID    uuid.UUID        `json:"question_id"`
-	SectionName   string           `json:"section_name"`
-	Sequence      int              `json:"sequence"`
-	Type          string           `json:"type"`
-	Text          string           `json:"text"`
-	ScoreWeight   float64          `json:"score_weight"`
-	Media         *model.Media     `json:"media,omitempty"`
-	MediaPosition string           `json:"media_position"`
-	Options       []AttemptOption  `json:"options"`
-	AnswerValue   string           `json:"answer_value"`
-	IsFlagged     bool             `json:"is_flagged"`
-	AnsweredAt    *time.Time       `json:"answered_at"`
+	QuestionID    uuid.UUID       `json:"question_id"`
+	SectionName   string          `json:"section_name"`
+	Sequence      int             `json:"sequence"`
+	Type          string          `json:"type"`
+	Text          string          `json:"text"`
+	ScoreWeight   float64         `json:"score_weight"`
+	Media         *model.Media    `json:"media,omitempty"`
+	MediaPosition string          `json:"media_position"`
+	Options       []AttemptOption `json:"options"`
+	AnswerValue   string          `json:"answer_value"`
+	IsFlagged     bool            `json:"is_flagged"`
+	AnsweredAt    *time.Time      `json:"answered_at"`
 }
 
 // GetQuestions mengembalikan lembar soal: daftar soal + jawaban tersimpan + flag.
@@ -216,4 +216,91 @@ func (u *AttemptEngineUsecase) SetFlag(ctx context.Context, userID, attemptID, q
 		return nil, err
 	}
 	return u.answers.SetFlag(ctx, attemptID, questionID, flagged)
+}
+
+type HeartbeatResult struct {
+	ServerTime       time.Time `json:"server_time"`
+	RemainingSeconds int64     `json:"remaining_seconds"`
+	IsExpired        bool      `json:"is_expired"`
+}
+
+// Heartbeat: sumber kebenaran sisa waktu adalah server, bukan jam browser.
+func (u *AttemptEngineUsecase) Heartbeat(ctx context.Context, userID, attemptID uuid.UUID) (*model.ExamAttempt, HeartbeatResult, error) {
+	attempt, _, err := u.resolveAttempt(ctx, userID, attemptID)
+	if err != nil {
+		return nil, HeartbeatResult{}, err
+	}
+	u.expireIfPast(attempt)
+
+	now := time.Now()
+	remaining := attempt.ExpiresAt.Sub(now).Milliseconds() / 1000
+	if remaining < 0 {
+		remaining = 0
+	}
+	isExpired := attempt.Status != model.AttemptStatusInProgress || remaining == 0
+
+	return attempt, HeartbeatResult{
+		ServerTime:       now,
+		RemainingSeconds: remaining,
+		IsExpired:        isExpired,
+	}, nil
+}
+
+type AutosaveItem struct {
+	QuestionID uuid.UUID
+	Value      string
+}
+
+// Autosave menyimpan banyak jawaban sekaligus (batch interval FE).
+func (u *AttemptEngineUsecase) Autosave(ctx context.Context, userID, attemptID uuid.UUID, items []AutosaveItem) (int, error) {
+	attempt, exam, err := u.resolveAttempt(ctx, userID, attemptID)
+	if err != nil {
+		return 0, err
+	}
+	if err := u.ensureActive(attempt); err != nil {
+		return 0, err
+	}
+
+	saved := 0
+	for _, item := range items {
+		if err := u.questionInExam(ctx, exam, item.QuestionID); err != nil {
+			continue
+		}
+		if _, err := u.answers.UpsertAnswer(ctx, attemptID, item.QuestionID, item.Value, time.Now().Unix()); err != nil {
+			return saved, err
+		}
+		saved++
+	}
+	return saved, nil
+}
+
+// Submit finalisasi attempt: status submitted + submitted_at.
+func (u *AttemptEngineUsecase) Submit(ctx context.Context, userID, attemptID uuid.UUID, confirm bool) (*model.ExamAttempt, error) {
+	attempt, _, err := u.resolveAttempt(ctx, userID, attemptID)
+	if err != nil {
+		return nil, err
+	}
+	if !confirm {
+		return nil, apperror.New(422, "Konfirmasi pengumpulan diperlukan", nil)
+	}
+	if attempt.Status == model.AttemptStatusSubmitted {
+		return attempt, nil
+	}
+
+	now := time.Now()
+	if attempt.Status == model.AttemptStatusInProgress && now.After(attempt.ExpiresAt) {
+		_ = u.attempts.MarkExpired(ctx, attempt.ID)
+	}
+
+	attempt.Status = model.AttemptStatusSubmitted
+	attempt.SubmittedAt = &now
+
+	if err := u.attempts.FinalizeSubmit(ctx, attempt.ID, now); err != nil {
+		return nil, err
+	}
+	return u.repo_findByID(ctx, attemptID)
+}
+
+func (u *AttemptEngineUsecase) repo_findByID(ctx context.Context, id uuid.UUID) (*model.ExamAttempt, error) {
+	return u.attempts.FindByID(ctx, id)
 }
