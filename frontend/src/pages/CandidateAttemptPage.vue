@@ -16,7 +16,7 @@ import BaseBadge from '../components/ui/BaseBadge.vue'
 import BaseButton from '../components/ui/BaseButton.vue'
 import BaseModal from '../components/ui/BaseModal.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
-import { apiErrorMessage } from '../lib/axios'
+import { api, apiErrorMessage } from '../lib/axios'
 import {
   attemptService,
   type AttemptQuestion,
@@ -52,6 +52,10 @@ let saveTimer: ReturnType<typeof setTimeout> | undefined
 
 const submitting = ref(false)
 const submitModalOpen = ref(false)
+const reportModalOpen = ref(false)
+const reportQuestion = ref<AttemptQuestion | null>(null)
+const reportReason = ref('')
+const reporting = ref(false)
 
 const nowTick = ref(Date.now())
 
@@ -188,6 +192,13 @@ function goTo(i: number) {
   }
 }
 
+function openReport() {
+  if (!currentQuestion.value) return
+  reportQuestion.value = currentQuestion.value
+  reportReason.value = ''
+  reportModalOpen.value = true
+}
+
 function setChoice(optionKey: string) {
   if (locked.value || !currentQuestion.value) return
   const q = currentQuestion.value
@@ -238,6 +249,23 @@ async function toggleFlag() {
 const fmtSubmitted = computed(() =>
   submittedAt.value ? new Date(submittedAt.value).toLocaleString('id-ID') : '',
 )
+
+async function submitReport() {
+  if (!reportQuestion.value || !reportReason.value.trim()) return
+  reporting.value = true
+  try {
+    await api.post(`/candidate/attempts/${attemptId}/questions/${reportQuestion.value.question_id}/report`, {
+      reason: reportReason.value.trim(),
+    })
+    ui.toastSuccess('Laporan soal terkirim.')
+    reportModalOpen.value = false
+    reportReason.value = ''
+  } catch {
+    ui.toastError('Gagal mengirim laporan.')
+  } finally {
+    reporting.value = false
+  }
+}
 
 async function doSubmit(auto: boolean) {
   if (submitting.value || submitted.value) return
@@ -300,6 +328,12 @@ const clockDisplay = computed(() => {
           Jawaban Anda telah dikumpulkan{{ fmtSubmitted ? ` pada ${fmtSubmitted}` : '' }}.
         </p>
         <BaseBadge tone="success" class="mt-4">Attempt #{{ attemptNo }} — submitted</BaseBadge>
+        <router-link
+          :to="`/candidate/attempts/${attemptId}/discussion`"
+          class="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+        >
+          Lihat Pembahasan Soal
+        </router-link>
       </div>
 
       <template v-else>
@@ -419,13 +453,22 @@ const clockDisplay = computed(() => {
               </div>
 
               <div class="mt-5 flex items-center justify-between border-t border-border pt-4">
-                <BaseButton
-                  :variant="currentAnswer.flagged ? 'secondary' : 'outline'"
-                  :disabled="locked"
-                  @click="toggleFlag()"
-                >
-                  <Flag /> {{ currentAnswer.flagged ? 'Lepas Ragu-ragu' : 'Ragu-ragu' }}
-                </BaseButton>
+                <div class="flex gap-2">
+                  <BaseButton
+                    :variant="currentAnswer.flagged ? 'secondary' : 'outline'"
+                    :disabled="locked"
+                    @click="toggleFlag()"
+                  >
+                    <Flag /> {{ currentAnswer.flagged ? 'Lepas Ragu-ragu' : 'Ragu-ragu' }}
+                  </BaseButton>
+                  <BaseButton
+                    variant="outline"
+                    :disabled="locked"
+                    @click="openReport()"
+                  >
+                    Laporkan Soal
+                  </BaseButton>
+                </div>
                 <div class="flex gap-2">
                   <BaseButton variant="outline" :disabled="current === 0" @click="goTo(current - 1)">
                     <ChevronLeft /> Sebelumnya
@@ -476,6 +519,27 @@ const clockDisplay = computed(() => {
           </aside>
         </div>
       </template>
+
+      <!-- MODAL REPORT -->
+      <BaseModal :open="reportModalOpen" title="Laporkan Soal" @close="reportModalOpen = false">
+        <div class="space-y-4">
+          <p class="text-sm text-muted-foreground">
+            Laporkan soal ini jika ada masalah (kunci salah, gambar tidak muncul, dll).
+          </p>
+          <textarea
+            v-model="reportReason"
+            rows="3"
+            placeholder="Jelaskan masalah pada soal ini…"
+            class="w-full rounded-lg border border-input bg-transparent p-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+        </div>
+        <template #footer>
+          <BaseButton variant="outline" @click="reportModalOpen = false">Batal</BaseButton>
+          <BaseButton :disabled="!reportReason.trim()" :loading="reporting" @click="submitReport">
+            Kirim Laporan
+          </BaseButton>
+        </template>
+      </BaseModal>
 
       <!-- KONFIRMASI SUBMIT -->
       <BaseModal :open="submitModalOpen" title="Kumpulkan Ujian?" @close="submitModalOpen = false">

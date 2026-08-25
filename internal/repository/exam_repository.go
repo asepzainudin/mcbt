@@ -93,7 +93,7 @@ func (r *ExamRepository) UpdateSettings(ctx context.Context, e *model.Exam) erro
 				"randomize_questions", "randomize_options", "allow_backtrack",
 				"auto_submit", "show_result_immediately",
 				"negative_marking", "negative_value",
-				"token_enabled", "exam_token", "updated_at",
+				"token_enabled", "allow_discussion", "exam_token", "updated_at",
 			).
 			Updates(e).Error,
 		"")

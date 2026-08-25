@@ -51,6 +51,7 @@ type ExamSettingsInput struct {
 	NegativeMarking       bool
 	NegativeValue         float64
 	TokenEnabled          bool
+	AllowDiscussion       bool
 }
 
 func refExists(ctx context.Context, err error, field, message string) error {
@@ -209,6 +210,7 @@ func (u *ExamUsecase) UpdateSettings(ctx context.Context, id uuid.UUID, in ExamS
 	exam.NegativeMarking = in.NegativeMarking
 	exam.NegativeValue = in.NegativeValue
 	exam.TokenEnabled = in.TokenEnabled
+	exam.AllowDiscussion = in.AllowDiscussion
 
 	if in.TokenEnabled && (exam.ExamToken == nil || *exam.ExamToken == "") {
 		token, err := passwordutil.Generate(6)

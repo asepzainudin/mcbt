@@ -337,3 +337,86 @@ func (u *AttemptEngineUsecase) gradeObjectives(ctx context.Context, attempt *mod
 	}
 	_ = u.grading.UpdateAttemptScore(ctx, attempt.ID, total)
 }
+
+type DiscussionItem struct {
+	QuestionID    uuid.UUID       `json:"question_id"`
+	SectionName   string          `json:"section_name"`
+	Type          string          `json:"type"`
+	Text          string          `json:"text"`
+	ScoreWeight   float64         `json:"score_weight"`
+	Media         *model.Media    `json:"media,omitempty"`
+	MediaPosition string          `json:"media_position"`
+	Options       []AttemptOption `json:"options"`
+	CorrectKeys   []string        `json:"correct_keys"`
+	Explanation   *string         `json:"explanation,omitempty"`
+	AnswerValue   string          `json:"answer_value"`
+	IsCorrect     *bool           `json:"is_correct"`
+	Score         *float64        `json:"score"`
+	Feedback      *string         `json:"feedback,omitempty"`
+	IsFlagged     bool            `json:"is_flagged"`
+}
+
+// GetDiscussion mengembalikan pembahasan lengkap setelah submit.
+func (u *AttemptEngineUsecase) GetDiscussion(ctx context.Context, userID, attemptID uuid.UUID) (*model.ExamAttempt, []DiscussionItem, error) {
+	attempt, exam, err := u.resolveAttempt(ctx, userID, attemptID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if attempt.Status != model.AttemptStatusSubmitted {
+		return nil, nil, apperror.New(403, "Pembahasan tersedia setelah ujian dikumpulkan", nil)
+	}
+	if !exam.AllowDiscussion {
+		return nil, nil, apperror.New(403, "Pembahasan tidak diaktifkan untuk ujian ini", nil)
+	}
+
+	groups, err := u.sections.ListExamQuestions(ctx, exam)
+	if err != nil {
+		return nil, nil, apperror.Internal(err)
+	}
+
+	answers, err := u.answers.ListByAttempt(ctx, attemptID)
+	if err != nil {
+		return nil, nil, apperror.Internal(err)
+	}
+	answerByQ := make(map[uuid.UUID]model.ExamAnswer, len(answers))
+	for _, a := range answers {
+		answerByQ[a.QuestionID] = a
+	}
+
+	items := make([]DiscussionItem, 0)
+	for _, g := range groups {
+		for _, q := range g.Questions {
+			item := DiscussionItem{
+				QuestionID:    q.ID,
+				SectionName:   g.Section.Name,
+				Type:          strings.ToUpper(q.QuestionType),
+				Text:          q.Content,
+				ScoreWeight:   q.ScoreWeight,
+				Media:         q.Media,
+				MediaPosition: q.MediaPosition,
+				Options:       make([]AttemptOption, 0, len(q.Options)),
+				CorrectKeys:   []string{},
+				Explanation:   q.Explanation,
+			}
+			for _, o := range q.Options {
+				item.Options = append(item.Options, AttemptOption{
+					OptionKey: o.Label,
+					Text:      o.Content,
+					Media:     o.Media,
+				})
+				if o.IsCorrect {
+					item.CorrectKeys = append(item.CorrectKeys, strings.ToUpper(o.Label))
+				}
+			}
+			if a, ok := answerByQ[q.ID]; ok {
+				item.AnswerValue = a.AnswerValue
+				item.IsFlagged = a.IsFlagged
+				item.IsCorrect = a.IsCorrect
+				item.Score = a.Score
+				item.Feedback = a.Feedback
+			}
+			items = append(items, item)
+		}
+	}
+	return attempt, items, nil
+}

@@ -29,6 +29,8 @@ type Exam struct {
 	NegativeMarking       bool       `gorm:"not null;default:false" json:"negative_marking"`
 	NegativeValue         float64    `gorm:"type:numeric(4,2);not null;default:0.00" json:"negative_value"`
 	TokenEnabled          bool       `gorm:"not null;default:false" json:"token_enabled"`
+	ResultsPublished      bool       `gorm:"not null;default:false" json:"results_published"`
+	AllowDiscussion       bool       `gorm:"not null;default:false" json:"allow_discussion"`
 	ExamToken             *string    `gorm:"type:varchar(10);uniqueIndex:uq_exams_token" json:"exam_token,omitempty"`
 
 	AttemptsCount int64 `gorm:"-" json:"attempts_count"`

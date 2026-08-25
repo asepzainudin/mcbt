@@ -50,7 +50,7 @@ func (h *GradingHandler) UngradedEssays(c *gin.Context) {
 
 type gradeEssayRequest struct {
 	QuestionID string  `json:"question_id" binding:"required,uuid"`
-	Score      float64 `json:"score" binding:"required,gte=0"`
+	Score      float64 `json:"score" binding:"gte=0"`
 	Feedback   *string `json:"feedback" binding:"omitempty,max=1000"`
 }
 

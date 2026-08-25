@@ -17,6 +17,8 @@ import {
   FileQuestion,
   ClipboardList,
   FileEdit,
+  Trophy,
+  Flag,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -36,6 +38,7 @@ const navItems = computed(() => {
   const items = [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }]
   if (auth.user?.roles.includes('student')) {
     items.push({ to: '/candidate', label: 'Ujian Saya', icon: FileEdit })
+    items.push({ to: '/my-results', label: 'Hasil Saya', icon: Trophy })
   }
   if (auth.user?.roles.includes('admin')) {
     items.push(
@@ -55,6 +58,7 @@ const masterDataItems = computed(() => {
     { to: '/teachers', label: 'Guru', icon: Users },
     { to: '/students', label: 'Siswa', icon: GraduationCap },
     { to: '/question-banks', label: 'Bank Soal', icon: FileQuestion },
+    { to: '/question-reports', label: 'Laporan Soal', icon: Flag },
   ]
 })
 

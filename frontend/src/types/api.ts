@@ -205,6 +205,7 @@ export interface Exam {
   allow_backtrack: boolean
   auto_submit: boolean
   show_result_immediately: boolean
+  allow_discussion: boolean
   negative_marking: boolean
   negative_value: number
   token_enabled: boolean
@@ -232,6 +233,7 @@ export interface ExamSettingsPayload {
   allow_backtrack: boolean
   auto_submit: boolean
   show_result_immediately: boolean
+  allow_discussion: boolean
   negative_marking: boolean
   negative_value: number
   token_enabled: boolean
@@ -320,4 +322,33 @@ export interface StartAttemptResult {
   started_at: string
   expires_at: string
   attempt_no: number
+}
+
+export interface StudentResultRow {
+  exam_id: string
+  exam_title: string
+  subject_name: string
+  status: string
+  score: number | null
+  passing_grade: number
+  results_published: boolean
+  show_result_immediately: boolean
+  has_essay: boolean
+  essay_ungraded: boolean
+  submitted_at: string | null
+}
+
+export type ReportStatus = 'pending' | 'reviewing' | 'resolved' | 'rejected'
+
+export interface QuestionReport {
+  id: string
+  attempt_id: string
+  question_id: string
+  student_id: string
+  reason: string
+  status: ReportStatus
+  resolution?: string | null
+  resolved_by?: string | null
+  resolved_at?: string | null
+  created_at: string
 }

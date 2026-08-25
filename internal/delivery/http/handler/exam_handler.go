@@ -38,9 +38,11 @@ func examResponse(e *model.Exam) ginH {
 		"allow_backtrack":         e.AllowBacktrack,
 		"auto_submit":             e.AutoSubmit,
 		"show_result_immediately": e.ShowResultImmediately,
+		"allow_discussion":        e.AllowDiscussion,
 		"negative_marking":        e.NegativeMarking,
 		"negative_value":          e.NegativeValue,
 		"token_enabled":           e.TokenEnabled,
+		"attempts_count":          e.AttemptsCount,
 		"exam_token":              e.ExamToken,
 		"subject":                 e.Subject,
 		"academic_year":           e.AcademicYear,
@@ -185,6 +187,7 @@ type examSettingsRequest struct {
 	NegativeMarking       bool    `json:"negative_marking"`
 	NegativeValue         float64 `json:"negative_value"`
 	TokenEnabled          bool    `json:"token_enabled"`
+	AllowDiscussion       bool    `json:"allow_discussion"`
 }
 
 func (h *ExamHandler) UpdateSettings(c *gin.Context) {
@@ -211,6 +214,7 @@ func (h *ExamHandler) UpdateSettings(c *gin.Context) {
 		NegativeMarking:       req.NegativeMarking,
 		NegativeValue:         req.NegativeValue,
 		TokenEnabled:          req.TokenEnabled,
+		AllowDiscussion:       req.AllowDiscussion,
 	}
 	if req.AllowBacktrack != nil {
 		in.AllowBacktrack = *req.AllowBacktrack

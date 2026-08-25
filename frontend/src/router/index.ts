@@ -78,6 +78,42 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresRole: 'student' },
     },
     {
+      path: '/exams/:id/results',
+      name: 'exam-results',
+      component: () => import('../pages/ExamResultsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/candidate/attempts/:id/discussion',
+      name: 'candidate-discussion',
+      component: () => import('../pages/CandidateDiscussionPage.vue'),
+      meta: { requiresAuth: true, requiresRole: 'student' },
+    },
+    {
+      path: '/question-reports',
+      name: 'question-reports',
+      component: () => import('../pages/QuestionReportsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/my-results',
+      name: 'my-results',
+      component: () => import('../pages/StudentResultsPage.vue'),
+      meta: { requiresAuth: true, requiresRole: 'student' },
+    },
+    {
+      path: '/exams/:id/results',
+      name: 'exam-results',
+      component: () => import('../pages/ExamResultsPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
+      path: '/exams/:id/answers',
+      name: 'exam-answers',
+      component: () => import('../pages/ExamAnswersPage.vue'),
+      meta: { requiresAuth: true, requiresAdmin: true },
+    },
+    {
       path: '/exams/:id/grading',
       name: 'exam-grading',
       component: () => import('../pages/GradingPage.vue'),

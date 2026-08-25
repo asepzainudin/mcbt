@@ -92,6 +92,30 @@ export const attemptService = {
     ).data.data
   },
 
+  async getDiscussion(attemptId: string) {
+    return (
+      await api.get<
+        ApiResponse<{
+          question_id: string
+          section_name: string
+          type: string
+          text: string
+          score_weight: number
+          media?: { url: string } | null
+          media_position: string
+          options: { option_key: string; text: string; media_url?: string }[]
+          correct_keys: string[]
+          explanation: string | null
+          answer_value: string
+          is_correct: boolean | null
+          score: number | null
+          feedback: string | null
+          is_flagged: boolean
+        }[]>
+      >(`/candidate/attempts/${attemptId}/discussion`)
+    ).data.data ?? []
+  },
+
   async setFlag(
     attemptId: string,
     questionId: string,

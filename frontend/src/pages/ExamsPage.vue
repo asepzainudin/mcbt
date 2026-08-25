@@ -4,8 +4,11 @@ import { useRouter } from 'vue-router'
 import {
   Pencil,
   Calculator,
+  Award,
   Send,
   Archive,
+  Flag,
+  FileText,
   CalendarClock,
   ListTree,
   Plus,
@@ -119,6 +122,7 @@ const st = ref({
   allow_backtrack: true,
   auto_submit: true,
   show_result_immediately: false,
+  allow_discussion: false,
   negative_marking: false,
   negative_value: '0',
   token_enabled: false,
@@ -179,6 +183,7 @@ function openSettings(e: Exam) {
     allow_backtrack: e.allow_backtrack,
     auto_submit: e.auto_submit,
     show_result_immediately: e.show_result_immediately,
+    allow_discussion: e.allow_discussion ?? false,
     negative_marking: e.negative_marking,
     negative_value: String(e.negative_value),
     token_enabled: e.token_enabled,
@@ -299,6 +304,15 @@ async function saveSettings() {
                   >
                     <Archive /> Tutup
                   </BaseButton>
+                  <BaseButton variant="ghost" size="icon" title="Rekap Nilai & Ranking" @click="router.push(`/exams/${e.id}/results`)">
+                    <Award />
+                  </BaseButton>
+                  <BaseButton variant="ghost" size="icon" title="Jawaban Siswa" @click="router.push(`/exams/${e.id}/answers`)">
+                    <FileText />
+                  </BaseButton>
+                  <BaseButton variant="ghost" size="icon" title="Laporan Soal" @click="router.push('/question-reports')">
+                    <Flag />
+                  </BaseButton>
                   <BaseButton variant="ghost" size="icon" title="Penilaian" @click="router.push(`/exams/${e.id}/grading`)">
                     <Calculator />
                   </BaseButton>
@@ -384,6 +398,7 @@ async function saveSettings() {
             <BaseSwitch v-model="st.allow_backtrack" label="Izinkan Backtrack" description="Peserta dapat kembali ke soal sebelumnya" />
             <BaseSwitch v-model="st.auto_submit" label="Auto Submit" description="Jawaban dikirim otomatis saat waktu habis" />
             <BaseSwitch v-model="st.show_result_immediately" label="Tampilkan Hasil Langsung" description="Nilai tampil segera setelah submit" />
+            <BaseSwitch v-model="st.allow_discussion" label="Aktifkan Pembahasan" description="Peserta dapat melihat pembahasan soal setelah submit" />
           </div>
 
           <div class="space-y-3 rounded-xl border border-border p-4">

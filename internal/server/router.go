@@ -99,6 +99,12 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			examRepo,
 		),
 	)
+	resultHandler := handler.NewResultHandler(
+		usecase.NewResultUsecase(
+			repository.NewResultRepository(d.DB), examRepo, studentRepo,
+		),
+		studentRepo,
+	)
 	examScheduleHandler := handler.NewExamScheduleHandler(
 		usecase.NewExamScheduleUsecase(
 			repository.NewExamScheduleRepository(d.DB), examRepo,
@@ -110,18 +116,26 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			repository.NewStudentRepository(d.DB),
 		),
 	)
+	attemptEngineUc := usecase.NewAttemptEngineUsecase(
+		attemptRepo,
+		repository.NewExamAnswerRepository(d.DB),
+		studentRepo,
+		examSectionRepo,
+		examRepo,
+		repository.NewGradingRepository(d.DB),
+	)
+	questionReportUc := usecase.NewQuestionReportUsecase(
+		repository.NewQuestionReportRepository(d.DB),
+		attemptRepo,
+		studentRepo,
+	)
+	attemptEngineHandler := handler.NewAttemptEngineHandler(attemptEngineUc)
+	questionReportHandler := handler.NewQuestionReportHandler(questionReportUc)
 	candidateExamHandler := handler.NewCandidateExamHandler(
 		usecase.NewCandidateExamUsecase(attemptRepo, studentRepo, examScheduleRepo, examRepo, examParticipantRepo),
-	)
-	attemptEngineHandler := handler.NewAttemptEngineHandler(
-		usecase.NewAttemptEngineUsecase(
-			attemptRepo,
-			repository.NewExamAnswerRepository(d.DB),
-			studentRepo,
-			repository.NewExamSectionRepository(d.DB),
-			examRepo,
-			repository.NewGradingRepository(d.DB),
-		),
+		attemptEngineUc,
+		questionReportUc,
+		repository.NewGradingRepository(d.DB),
 	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
@@ -229,6 +243,8 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.GET("/exams/:id/grading", gradingHandler.GradingSheet)
 			adminOnly.PUT("/attempts/:id/grade-essay", gradingHandler.GradeEssay)
 
+			adminOnly.GET("/exams/:id/results", resultHandler.ExamResults)
+			adminOnly.PATCH("/exams/:id/publish-results", resultHandler.PublishResults)
 			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)
 			adminOnly.POST("/exams/:id/sections", examSectionHandler.Create)
 
@@ -247,20 +263,27 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			candidate := protected.Group("/candidate", middleware.RequireRoles("student"))
 			{
 				candidate.GET("/exams", candidateExamHandler.ListExams)
+
 				candidate.POST("/exams/:exam_id/validate-token", candidateExamHandler.ValidateToken)
 				candidate.POST("/exams/:exam_id/start", candidateExamHandler.Start)
 				candidate.GET("/attempts/:id/questions", attemptEngineHandler.GetQuestions)
 				candidate.POST("/attempts/:id/answers", attemptEngineHandler.SaveAnswer)
 				candidate.POST("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Flag)
+				candidate.GET("/attempts/:id/discussion", candidateExamHandler.GetDiscussion)
+				candidate.POST("/attempts/:id/questions/:question_id/report", candidateExamHandler.ReportQuestion)
 				candidate.DELETE("/attempts/:id/questions/:question_id/flag", attemptEngineHandler.Unflag)
 				candidate.POST("/attempts/:id/heartbeat", attemptEngineHandler.Heartbeat)
 				candidate.POST("/attempts/:id/autosave", attemptEngineHandler.Autosave)
 				candidate.POST("/attempts/:id/submit", attemptEngineHandler.Submit)
+				candidate.GET("/results", resultHandler.CandidateResults)
 			}
 
 			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)
 			adminOnly.POST("/exams/:id/participants/assign-individual", examParticipantHandler.AssignIndividual)
 			adminOnly.DELETE("/exams/:id/participants/:participant_id", examParticipantHandler.Remove)
+			protected.GET("/students/:id/results", resultHandler.StudentResults)
+			adminOnly.GET("/question-reports", questionReportHandler.List)
+			adminOnly.PATCH("/question-reports/:id/resolve", questionReportHandler.Resolve)
 			adminOnly.DELETE("/sections/:id/questions/:question_id", examSectionHandler.RemoveQuestion)
 		}
 	}
