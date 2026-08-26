@@ -8,25 +8,24 @@ import (
 	"gorm.io/gorm"
 
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 // AccessUsecase memastikan guru hanya dapat mengelola data
 // yang terhubung dengan akunnya sendiri (data scope).
 type AccessUsecase struct {
-	banks     *repository.QuestionBankRepository
-	exams     *repository.ExamRepository
-	sections  *repository.ExamSectionRepository
-	questions *repository.QuestionRepository
-	attempts  *repository.ExamAttemptRepository
+	banks     QuestionBankRepo
+	exams     ExamRepo
+	sections  ExamSectionRepo
+	questions QuestionRepo
+	attempts  ExamAttemptRepo
 }
 
 func NewAccessUsecase(
-	banks *repository.QuestionBankRepository,
-	exams *repository.ExamRepository,
-	sections *repository.ExamSectionRepository,
-	questions *repository.QuestionRepository,
-	attempts *repository.ExamAttemptRepository,
+	banks QuestionBankRepo,
+	exams ExamRepo,
+	sections ExamSectionRepo,
+	questions QuestionRepo,
+	attempts ExamAttemptRepo,
 ) *AccessUsecase {
 	return &AccessUsecase{banks: banks, exams: exams, sections: sections, questions: questions, attempts: attempts}
 }

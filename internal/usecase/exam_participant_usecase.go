@@ -9,21 +9,20 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type ExamParticipantUsecase struct {
-	participants *repository.ExamParticipantRepository
-	exams        *repository.ExamRepository
-	classes      *repository.ClassRepository
-	students     *repository.StudentRepository
+	participants ExamParticipantRepo
+	exams        ExamRepo
+	classes      ClassRepo
+	students     StudentRepo
 }
 
 func NewExamParticipantUsecase(
-	participants *repository.ExamParticipantRepository,
-	exams *repository.ExamRepository,
-	classes *repository.ClassRepository,
-	students *repository.StudentRepository,
+	participants ExamParticipantRepo,
+	exams ExamRepo,
+	classes ClassRepo,
+	students StudentRepo,
 ) *ExamParticipantUsecase {
 	return &ExamParticipantUsecase{
 		participants: participants,

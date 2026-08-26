@@ -9,14 +9,13 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type SubjectUsecase struct {
-	repo *repository.SubjectRepository
+	repo SubjectRepo
 }
 
-func NewSubjectUsecase(repo *repository.SubjectRepository) *SubjectUsecase {
+func NewSubjectUsecase(repo SubjectRepo) *SubjectUsecase {
 	return &SubjectUsecase{repo: repo}
 }
 

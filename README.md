@@ -194,8 +194,11 @@ untuk metode tidak aman (POST/PUT/PATCH/DELETE).
 ## Testing
 
 ```bash
-# unit test backend
+# unit test backend (93 test usecase + pkg)
 go test ./...
+
+# coverage paket usecase
+go test -cover ./internal/usecase/
 
 # component test frontend
 cd frontend && npm test
@@ -203,6 +206,19 @@ cd frontend && npm test
 # build verifikasi
 go build ./... && cd frontend && npm run build
 ```
+
+### Strategi Test Backend
+
+Usecase dites dengan **consumer-defined interface** (`internal/usecase/interfaces.go`)
++ **fake hand-written** (`fakes_test.go`) — tanpa DB nyata, tanpa dependensi mock.
+Kontrak penting yang dijaga fake: repo user mengembalikan `(nil, nil)` saat data
+tidak ditemukan; repo lain memancarkan `gorm.ErrRecordNotFound`.
+
+Cakupan: seluruh usecase in-scope (auth, master data, bank soal, ujian, section,
+attempt engine + skoring, grading, hasil, laporan, jadwal/peserta, dashboard,
+profil, ekspor, impor Excel). `media` (S3/MinIO) di luar cakupan unit test.
+Jam server diinjeksi (`now func() time.Time`) sehingga kasus kedaluwarsa & jendela
+ujian dites deterministik.
 
 ## Struktur Proyek
 

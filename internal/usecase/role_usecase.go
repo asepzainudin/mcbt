@@ -7,15 +7,14 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type RoleUsecase struct {
-	roles *repository.RoleRepository
-	users *repository.UserRepository
+	roles RoleRepo
+	users UserRepo
 }
 
-func NewRoleUsecase(roles *repository.RoleRepository, users *repository.UserRepository) *RoleUsecase {
+func NewRoleUsecase(roles RoleRepo, users UserRepo) *RoleUsecase {
 	return &RoleUsecase{roles: roles, users: users}
 }
 

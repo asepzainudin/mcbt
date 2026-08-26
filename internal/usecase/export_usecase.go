@@ -12,21 +12,20 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type ExportUsecase struct {
-	results  *ResultUsecase
-	exams    *repository.ExamRepository
-	students *repository.StudentRepository
-	teachers *repository.TeacherRepository
+	results  ExamRanker
+	exams    ExamRepo
+	students StudentRepo
+	teachers TeacherRepo
 }
 
 func NewExportUsecase(
-	results *ResultUsecase,
-	exams *repository.ExamRepository,
-	students *repository.StudentRepository,
-	teachers *repository.TeacherRepository,
+	results ExamRanker,
+	exams ExamRepo,
+	students StudentRepo,
+	teachers TeacherRepo,
 ) *ExportUsecase {
 	return &ExportUsecase{results: results, exams: exams, students: students, teachers: teachers}
 }

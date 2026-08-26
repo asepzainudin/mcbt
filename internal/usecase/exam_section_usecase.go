@@ -15,15 +15,15 @@ import (
 )
 
 type ExamSectionUsecase struct {
-	sections *repository.ExamSectionRepository
-	exams    *repository.ExamRepository
-	banks    *repository.QuestionBankRepository
+	sections ExamSectionRepo
+	exams    ExamRepo
+	banks    QuestionBankRepo
 }
 
 func NewExamSectionUsecase(
-	sections *repository.ExamSectionRepository,
-	exams *repository.ExamRepository,
-	banks *repository.QuestionBankRepository,
+	sections ExamSectionRepo,
+	exams ExamRepo,
+	banks QuestionBankRepo,
 ) *ExamSectionUsecase {
 	return &ExamSectionUsecase{sections: sections, exams: exams, banks: banks}
 }

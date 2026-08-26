@@ -19,11 +19,11 @@ import (
 var teacherTemplateColumns = []string{"username", "name", "email", "nip", "phone"}
 
 type TeacherUsecase struct {
-	repo  *repository.TeacherRepository
-	roles *repository.RoleRepository
+	repo  TeacherRepo
+	roles RoleRepo
 }
 
-func NewTeacherUsecase(repo *repository.TeacherRepository, roles *repository.RoleRepository) *TeacherUsecase {
+func NewTeacherUsecase(repo TeacherRepo, roles RoleRepo) *TeacherUsecase {
 	return &TeacherUsecase{repo: repo, roles: roles}
 }
 

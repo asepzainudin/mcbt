@@ -13,15 +13,15 @@ import (
 )
 
 type QuestionBankUsecase struct {
-	repo      *repository.QuestionBankRepository
-	subjects  *repository.SubjectRepository
-	questions *repository.QuestionRepository
+	repo      QuestionBankRepo
+	subjects  SubjectRepo
+	questions QuestionRepo
 }
 
 func NewQuestionBankUsecase(
-	repo *repository.QuestionBankRepository,
-	subjects *repository.SubjectRepository,
-	questions *repository.QuestionRepository,
+	repo QuestionBankRepo,
+	subjects SubjectRepo,
+	questions QuestionRepo,
 ) *QuestionBankUsecase {
 	return &QuestionBankUsecase{repo: repo, subjects: subjects, questions: questions}
 }

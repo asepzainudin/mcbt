@@ -32,17 +32,17 @@ type QuestionInput struct {
 }
 
 type QuestionUsecase struct {
-	repo     *repository.QuestionRepository
-	banks    *repository.QuestionBankRepository
-	sections *repository.ExamSectionRepository
-	answers  *repository.ExamAnswerRepository
+	repo     QuestionRepo
+	banks    QuestionBankRepo
+	sections ExamSectionRepo
+	answers  ExamAnswerRepo
 }
 
 func NewQuestionUsecase(
-	repo *repository.QuestionRepository,
-	banks *repository.QuestionBankRepository,
-	sections *repository.ExamSectionRepository,
-	answers *repository.ExamAnswerRepository,
+	repo QuestionRepo,
+	banks QuestionBankRepo,
+	sections ExamSectionRepo,
+	answers ExamAnswerRepo,
 ) *QuestionUsecase {
 	return &QuestionUsecase{repo: repo, banks: banks, sections: sections, answers: answers}
 }

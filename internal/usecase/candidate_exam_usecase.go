@@ -16,23 +16,25 @@ import (
 )
 
 type CandidateExamUsecase struct {
-	attempts     *repository.ExamAttemptRepository
-	students     *repository.StudentRepository
-	schedules    *repository.ExamScheduleRepository
-	exams        *repository.ExamRepository
-	participants *repository.ExamParticipantRepository
+	attempts     ExamAttemptRepo
+	students     StudentRepo
+	schedules    ExamScheduleRepo
+	exams        ExamRepo
+	participants ExamParticipantRepo
+	now          func() time.Time // injektibel untuk unit test
 }
 
 func NewCandidateExamUsecase(
-	attempts *repository.ExamAttemptRepository,
-	students *repository.StudentRepository,
-	schedules *repository.ExamScheduleRepository,
-	exams *repository.ExamRepository,
-	participants *repository.ExamParticipantRepository,
+	attempts ExamAttemptRepo,
+	students StudentRepo,
+	schedules ExamScheduleRepo,
+	exams ExamRepo,
+	participants ExamParticipantRepo,
 ) *CandidateExamUsecase {
 	return &CandidateExamUsecase{
 		attempts: attempts, students: students, schedules: schedules,
 		exams: exams, participants: participants,
+		now: time.Now,
 	}
 }
 
@@ -110,7 +112,7 @@ func (u *CandidateExamUsecase) ValidateToken(ctx context.Context, userID, examID
 	}
 	cc.Schedule = schedule
 
-	now := time.Now()
+	now := u.now()
 	if now.Before(schedule.StartTime) {
 		return apperror.New(403, fmt.Sprintf(
 			"Ujian belum dimulai (mulai %s)", schedule.StartTime.Format("02 Jan 2006 15:04")), nil)
@@ -155,7 +157,7 @@ func (u *CandidateExamUsecase) Start(ctx context.Context, userID, examID uuid.UU
 	}
 	cc.Schedule = schedule
 
-	now := time.Now()
+	now := u.now()
 	if now.Before(schedule.StartTime) {
 		return nil, apperror.New(403, "Ujian belum dimulai", nil)
 	}

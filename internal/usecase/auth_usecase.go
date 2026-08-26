@@ -11,7 +11,6 @@ import (
 	jwtmanager "github.com/asepzainudin14/mcbt/internal/pkg/jwt"
 
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type AuthTokenPair struct {
@@ -25,11 +24,11 @@ type AuthResult struct {
 }
 
 type AuthUsecase struct {
-	users  *repository.UserRepository
+	users  UserRepo
 	tokens *jwtmanager.Manager
 }
 
-func NewAuthUsecase(users *repository.UserRepository, tokens *jwtmanager.Manager) *AuthUsecase {
+func NewAuthUsecase(users UserRepo, tokens *jwtmanager.Manager) *AuthUsecase {
 	return &AuthUsecase{users: users, tokens: tokens}
 }
 

@@ -11,29 +11,30 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type AttemptEngineUsecase struct {
-	attempts *repository.ExamAttemptRepository
-	answers  *repository.ExamAnswerRepository
-	students *repository.StudentRepository
-	sections *repository.ExamSectionRepository
-	exams    *repository.ExamRepository
-	grading  *repository.GradingRepository
+	attempts ExamAttemptRepo
+	answers  ExamAnswerRepo
+	students StudentRepo
+	sections ExamSectionRepo
+	exams    ExamRepo
+	grading  GradingRepo
+	now      func() time.Time // injektibel untuk unit test
 }
 
 func NewAttemptEngineUsecase(
-	attempts *repository.ExamAttemptRepository,
-	answers *repository.ExamAnswerRepository,
-	students *repository.StudentRepository,
-	sections *repository.ExamSectionRepository,
-	exams *repository.ExamRepository,
-	grading *repository.GradingRepository,
+	attempts ExamAttemptRepo,
+	answers ExamAnswerRepo,
+	students StudentRepo,
+	sections ExamSectionRepo,
+	exams ExamRepo,
+	grading GradingRepo,
 ) *AttemptEngineUsecase {
 	return &AttemptEngineUsecase{
 		attempts: attempts, answers: answers, students: students,
 		sections: sections, exams: exams, grading: grading,
+		now: time.Now,
 	}
 }
 
@@ -70,7 +71,7 @@ func (u *AttemptEngineUsecase) resolveAttempt(ctx context.Context, userID, attem
 
 // expireIfPast menandai attempt expired bila waktu sudah lewat.
 func (u *AttemptEngineUsecase) expireIfPast(attempt *model.ExamAttempt) {
-	if attempt.Status == model.AttemptStatusInProgress && time.Now().After(attempt.ExpiresAt) {
+	if attempt.Status == model.AttemptStatusInProgress && u.now().After(attempt.ExpiresAt) {
 		_ = u.attempts.MarkExpired(context.Background(), attempt.ID)
 		attempt.Status = model.AttemptStatusExpired
 	}
@@ -81,7 +82,7 @@ func (u *AttemptEngineUsecase) ensureActive(attempt *model.ExamAttempt) error {
 	if attempt.Status != model.AttemptStatusInProgress {
 		return apperror.New(403, "Attempt sudah tidak aktif", nil)
 	}
-	if time.Now().After(attempt.ExpiresAt) {
+	if u.now().After(attempt.ExpiresAt) {
 		_ = u.attempts.MarkExpired(context.Background(), attempt.ID)
 		return apperror.New(403, "Waktu pengerjaan habis", nil)
 	}
@@ -96,11 +97,13 @@ func (u *AttemptEngineUsecase) questionInExam(ctx context.Context, exam *model.E
 	if exists {
 		return nil
 	}
-	// fallback: soal langsung dari bank ujian
+	// fallback: soal langsung dari bank ujian (ujian tanpa bank → lewati)
 	var count int64
-	if err := u.exams.CountBankQuestion(ctx, *exam.QuestionBankID, questionID, &count); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		// exam tanpa bank → count 0
-		_ = err
+	if exam.QuestionBankID != nil {
+		if err := u.exams.CountBankQuestion(ctx, *exam.QuestionBankID, questionID, &count); err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			// exam tanpa bank → count 0
+			_ = err
+		}
 	}
 	if count > 0 {
 		return nil
@@ -234,7 +237,7 @@ func (u *AttemptEngineUsecase) Heartbeat(ctx context.Context, userID, attemptID 
 	}
 	u.expireIfPast(attempt)
 
-	now := time.Now()
+	now := u.now()
 	remaining := attempt.ExpiresAt.Sub(now).Milliseconds() / 1000
 	if remaining < 0 {
 		remaining = 0
@@ -268,7 +271,7 @@ func (u *AttemptEngineUsecase) Autosave(ctx context.Context, userID, attemptID u
 		if err := u.questionInExam(ctx, exam, item.QuestionID); err != nil {
 			continue
 		}
-		if _, err := u.answers.UpsertAnswer(ctx, attemptID, item.QuestionID, item.Value, time.Now().Unix()); err != nil {
+		if _, err := u.answers.UpsertAnswer(ctx, attemptID, item.QuestionID, item.Value, u.now().Unix()); err != nil {
 			return saved, err
 		}
 		saved++
@@ -289,7 +292,7 @@ func (u *AttemptEngineUsecase) Submit(ctx context.Context, userID, attemptID uui
 		return attempt, nil
 	}
 
-	now := time.Now()
+	now := u.now()
 	if attempt.Status == model.AttemptStatusInProgress && now.After(attempt.ExpiresAt) {
 		_ = u.attempts.MarkExpired(ctx, attempt.ID)
 	}

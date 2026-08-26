@@ -15,17 +15,17 @@ import (
 )
 
 type QuestionReportUsecase struct {
-	reports  *repository.QuestionReportRepository
-	attempts *repository.ExamAttemptRepository
-	students *repository.StudentRepository
-	access   *AccessUsecase
+	reports  QuestionReportRepo
+	attempts ExamAttemptRepo
+	students StudentRepo
+	access   AttemptOwnerAssertor
 }
 
 func NewQuestionReportUsecase(
-	reports *repository.QuestionReportRepository,
-	attempts *repository.ExamAttemptRepository,
-	students *repository.StudentRepository,
-	access *AccessUsecase,
+	reports QuestionReportRepo,
+	attempts ExamAttemptRepo,
+	students StudentRepo,
+	access AttemptOwnerAssertor,
 ) *QuestionReportUsecase {
 	return &QuestionReportUsecase{reports: reports, attempts: attempts, students: students, access: access}
 }

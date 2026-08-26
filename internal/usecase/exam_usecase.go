@@ -14,19 +14,19 @@ import (
 )
 
 type ExamUsecase struct {
-	repo     *repository.ExamRepository
-	subjects *repository.SubjectRepository
-	ays      *repository.AcademicYearRepository
-	banks    *repository.QuestionBankRepository
-	attempts *repository.ExamAttemptRepository
+	repo     ExamRepo
+	subjects SubjectRepo
+	ays      AcademicYearRepo
+	banks    QuestionBankRepo
+	attempts ExamAttemptRepo
 }
 
 func NewExamUsecase(
-	repo *repository.ExamRepository,
-	subjects *repository.SubjectRepository,
-	ays *repository.AcademicYearRepository,
-	banks *repository.QuestionBankRepository,
-	attempts *repository.ExamAttemptRepository,
+	repo ExamRepo,
+	subjects SubjectRepo,
+	ays AcademicYearRepo,
+	banks QuestionBankRepo,
+	attempts ExamAttemptRepo,
 ) *ExamUsecase {
 	return &ExamUsecase{repo: repo, subjects: subjects, ays: ays, banks: banks, attempts: attempts}
 }

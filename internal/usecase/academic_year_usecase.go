@@ -10,7 +10,6 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 var yearPattern = regexp.MustCompile(`^\d{4}/\d{4}$`)
@@ -27,10 +26,10 @@ func validateAYInput(in AcademicYearInput) error {
 }
 
 type AcademicYearUsecase struct {
-	repo *repository.AcademicYearRepository
+	repo AcademicYearRepo
 }
 
-func NewAcademicYearUsecase(repo *repository.AcademicYearRepository) *AcademicYearUsecase {
+func NewAcademicYearUsecase(repo AcademicYearRepo) *AcademicYearUsecase {
 	return &AcademicYearUsecase{repo: repo}
 }
 

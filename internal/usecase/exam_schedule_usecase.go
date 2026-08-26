@@ -14,7 +14,6 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 const examTokenCharset = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
@@ -33,13 +32,13 @@ func generateExamToken(length int) (string, error) {
 }
 
 type ExamScheduleUsecase struct {
-	schedules *repository.ExamScheduleRepository
-	exams     *repository.ExamRepository
+	schedules ExamScheduleRepo
+	exams     ExamRepo
 }
 
 func NewExamScheduleUsecase(
-	schedules *repository.ExamScheduleRepository,
-	exams *repository.ExamRepository,
+	schedules ExamScheduleRepo,
+	exams ExamRepo,
 ) *ExamScheduleUsecase {
 	return &ExamScheduleUsecase{schedules: schedules, exams: exams}
 }

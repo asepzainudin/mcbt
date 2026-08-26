@@ -18,7 +18,6 @@ import (
 
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 const importTokenTTL = 15 * time.Minute
@@ -95,10 +94,10 @@ type ImportResult struct {
 
 type QuestionImportUsecase struct {
 	store *ImportTokenStore
-	repo  *repository.QuestionRepository
+	repo  QuestionRepo
 }
 
-func NewQuestionImportUsecase(store *ImportTokenStore, repo *repository.QuestionRepository) *QuestionImportUsecase {
+func NewQuestionImportUsecase(store *ImportTokenStore, repo QuestionRepo) *QuestionImportUsecase {
 	return &QuestionImportUsecase{store: store, repo: repo}
 }
 

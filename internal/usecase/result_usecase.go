@@ -14,15 +14,15 @@ import (
 )
 
 type ResultUsecase struct {
-	results  *repository.ResultRepository
-	exams    *repository.ExamRepository
-	students *repository.StudentRepository
+	results  ResultRepo
+	exams    ExamRepo
+	students StudentRepo
 }
 
 func NewResultUsecase(
-	results *repository.ResultRepository,
-	exams *repository.ExamRepository,
-	students *repository.StudentRepository,
+	results ResultRepo,
+	exams ExamRepo,
+	students StudentRepo,
 ) *ResultUsecase {
 	return &ResultUsecase{results: results, exams: exams, students: students}
 }

@@ -13,16 +13,15 @@ import (
 	"github.com/asepzainudin14/mcbt/internal/model"
 	"github.com/asepzainudin14/mcbt/internal/pkg/apperror"
 	"github.com/asepzainudin14/mcbt/internal/pkg/storage"
-	"github.com/asepzainudin14/mcbt/internal/repository"
 )
 
 type MediaUsecase struct {
-	repo     *repository.MediaRepository
+	repo     MediaRepo
 	storage  *storage.Client
 	maxBytes int64
 }
 
-func NewMediaUsecase(repo *repository.MediaRepository, st *storage.Client, maxBytes int64) *MediaUsecase {
+func NewMediaUsecase(repo MediaRepo, st *storage.Client, maxBytes int64) *MediaUsecase {
 	return &MediaUsecase{repo: repo, storage: st, maxBytes: maxBytes}
 }
 

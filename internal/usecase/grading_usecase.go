@@ -17,17 +17,17 @@ import (
 )
 
 type GradingUsecase struct {
-	grading  *repository.GradingRepository
-	answers  *repository.ExamAnswerRepository
-	attempts *repository.ExamAttemptRepository
-	exams    *repository.ExamRepository
+	grading  GradingRepo
+	answers  ExamAnswerRepo
+	attempts ExamAttemptRepo
+	exams    ExamRepo
 }
 
 func NewGradingUsecase(
-	grading *repository.GradingRepository,
-	answers *repository.ExamAnswerRepository,
-	attempts *repository.ExamAttemptRepository,
-	exams *repository.ExamRepository,
+	grading GradingRepo,
+	answers ExamAnswerRepo,
+	attempts ExamAttemptRepo,
+	exams ExamRepo,
 ) *GradingUsecase {
 	return &GradingUsecase{grading: grading, answers: answers, attempts: attempts, exams: exams}
 }

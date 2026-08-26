@@ -13,11 +13,11 @@ import (
 )
 
 type ClassUsecase struct {
-	repo *repository.ClassRepository
-	ays  *repository.AcademicYearRepository
+	repo ClassRepo
+	ays  AcademicYearRepo
 }
 
-func NewClassUsecase(repo *repository.ClassRepository, ays *repository.AcademicYearRepository) *ClassUsecase {
+func NewClassUsecase(repo ClassRepo, ays AcademicYearRepo) *ClassUsecase {
 	return &ClassUsecase{repo: repo, ays: ays}
 }
 

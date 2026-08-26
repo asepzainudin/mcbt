@@ -12,15 +12,15 @@ import (
 )
 
 type DashboardUsecase struct {
-	dash     *repository.DashboardRepository
-	students *repository.StudentRepository
-	teachers *repository.TeacherRepository
+	dash     DashboardRepo
+	students StudentRepo
+	teachers TeacherRepo
 }
 
 func NewDashboardUsecase(
-	dash *repository.DashboardRepository,
-	students *repository.StudentRepository,
-	teachers *repository.TeacherRepository,
+	dash DashboardRepo,
+	students StudentRepo,
+	teachers TeacherRepo,
 ) *DashboardUsecase {
 	return &DashboardUsecase{dash: dash, students: students, teachers: teachers}
 }
