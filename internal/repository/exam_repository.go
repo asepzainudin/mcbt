@@ -23,6 +23,7 @@ type ExamListParams struct {
 	SubjectID      *uuid.UUID
 	AcademicYearID *uuid.UUID
 	Status         string
+	OwnerUserID    *uuid.UUID // data scope guru via bank soal
 	Page           int
 	Limit          int
 }
@@ -43,8 +44,11 @@ func (r *ExamRepository) List(ctx context.Context, p ExamListParams) (*PageResul
 	if p.Status != "" {
 		q = q.Where("status = ?", p.Status)
 	}
+	if p.OwnerUserID != nil {
+		q = q.Where("exams.created_by = ?", *p.OwnerUserID)
+	}
 	if p.Search != "" {
-		q = q.Where("title ILIKE ?", "%"+p.Search+"%")
+		q = q.Where("exams.title ILIKE ?", "%"+p.Search+"%")
 	}
 	if err := q.Count(&total).Error; err != nil {
 		return nil, err

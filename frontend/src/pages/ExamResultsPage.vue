@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   ArrowLeft,
   Send,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-vue-next'
 
 import AppShell from '../components/layout/AppShell.vue'
@@ -14,7 +16,7 @@ import BaseSelect from '../components/ui/BaseSelect.vue'
 import BaseTable from '../components/ui/BaseTable.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
-import { apiErrorMessage } from '../lib/axios'
+import { api, apiErrorMessage } from '../lib/axios'
 import { resultService } from '../services/result.service'
 import { examService } from '../services/exam.service'
 import { masterDataService } from '../services/master-data.service'
@@ -73,6 +75,31 @@ async function fetchResults() {
   }
 }
 
+const exporting = ref(false)
+
+async function downloadResults(format: 'xlsx' | 'pdf') {
+  exporting.value = true
+  try {
+    const res = await api.get(`/exams/${examId}/export?format=${format}`, { responseType: 'blob' })
+    const dispo = (res.headers?.['content-disposition'] as string | undefined) ?? ''
+    const match = dispo.match(/filename="([^"]+)"/)
+    const name = match?.[1] ?? `hasil-ujian.${format}`
+    const url = URL.createObjectURL(res.data as Blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = name
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    URL.revokeObjectURL(url)
+    ui.toastSuccess(`Berhasil mengunduh ${name}`)
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal mengunduh file.'))
+  } finally {
+    exporting.value = false
+  }
+}
+
 const rankIcon = (rank: number) => {
   if (rank === 1) return '🥇'
   if (rank === 2) return '🥈'
@@ -122,9 +149,17 @@ async function doPublish() {
               @update:model-value="fetchResults()"
             />
           </div>
-          <BaseButton variant="outline" @click="publishModal = true">
-            <Send /> Publikasikan Hasil
-          </BaseButton>
+          <div class="flex flex-wrap gap-2">
+            <BaseButton variant="outline" :disabled="exporting" @click="downloadResults('xlsx')">
+              <FileSpreadsheet class="size-4" /> Excel
+            </BaseButton>
+            <BaseButton variant="outline" :disabled="exporting" @click="downloadResults('pdf')">
+              <FileText class="size-4" /> PDF
+            </BaseButton>
+            <BaseButton variant="outline" @click="publishModal = true">
+              <Send /> Publikasikan Hasil
+            </BaseButton>
+          </div>
         </div>
 
         <EmptyState v-if="results.length === 0" title="Belum ada peserta yang mengumpulkan" />

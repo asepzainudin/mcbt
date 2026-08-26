@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Pencil, Plus, Search, Trash2, Upload } from 'lucide-vue-next'
+import { Copy, FileSpreadsheet, FileText, KeyRound, Pencil, Plus, Search, Trash2, Upload } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import AppShell from '../components/layout/AppShell.vue'
@@ -12,10 +12,60 @@ import BaseTable from '../components/ui/BaseTable.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
 import { useCrudTable } from '../composables/useCrudTable'
+import { useExport } from '../composables/useExport'
 import { teacherService } from '../services/teacher.service'
+import { apiErrorMessage } from '../lib/axios'
 import type { Teacher } from '../types/api'
+import { useUiStore } from '../stores/ui'
 
+const ui = useUiStore()
 const showImport = ref(false)
+const { exporting, download } = useExport()
+
+// ---- reset password guru ----
+const resetTarget = ref<Teacher | null>(null)
+const resetting = ref(false)
+const newPassword = ref('')
+const customPassword = ref('')
+
+function openReset(t: Teacher) {
+  resetTarget.value = t
+  newPassword.value = ''
+  customPassword.value = ''
+}
+
+function closeReset() {
+  resetTarget.value = null
+  newPassword.value = ''
+  customPassword.value = ''
+}
+
+async function submitReset() {
+  if (!resetTarget.value) return
+  if (customPassword.value && customPassword.value.length < 8) {
+    ui.toastError('Password minimal 8 karakter.')
+    return
+  }
+  resetting.value = true
+  try {
+    const res = await teacherService.resetPassword(resetTarget.value.id, customPassword.value || undefined)
+    newPassword.value = res.new_password
+    ui.toastSuccess('Password guru diperbarui.')
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal mengganti password.'))
+  } finally {
+    resetting.value = false
+  }
+}
+
+async function copyPassword() {
+  try {
+    await navigator.clipboard.writeText(newPassword.value)
+    ui.toastSuccess('Password disalin ke clipboard.')
+  } catch {
+    ui.toastWarning('Tidak dapat menyalin — salin manual.')
+  }
+}
 
 const crud = useCrudTable<Teacher>({
   itemLabel: 'Guru',
@@ -62,6 +112,20 @@ const crud = useCrudTable<Teacher>({
               class="h-9 w-48 rounded-lg border border-input bg-transparent pl-9 pr-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
+          <BaseButton
+            variant="outline"
+            :disabled="exporting === '/export/teachers?format=xlsx'"
+            @click="download('/export/teachers?format=xlsx')"
+          >
+            <FileSpreadsheet /> Excel
+          </BaseButton>
+          <BaseButton
+            variant="outline"
+            :disabled="exporting === '/export/teachers?format=pdf'"
+            @click="download('/export/teachers?format=pdf')"
+          >
+            <FileText /> PDF
+          </BaseButton>
           <BaseButton variant="outline" @click="showImport = true">
             <Upload /> Impor
           </BaseButton>
@@ -96,6 +160,9 @@ const crud = useCrudTable<Teacher>({
               <td class="px-4 py-3 text-muted-foreground">{{ t.phone ?? '—' }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-end gap-1">
+                  <BaseButton variant="ghost" size="icon" aria-label="Reset password" title="Ganti Password" @click="openReset(t)">
+                    <KeyRound />
+                  </BaseButton>
                   <BaseButton variant="ghost" size="icon" aria-label="Edit" @click="crud.openEdit(t)">
                     <Pencil />
                   </BaseButton>
@@ -150,5 +217,43 @@ const crud = useCrudTable<Teacher>({
         </template>
       </BaseModal>
     </div>
+
+      <!-- MODAL GANTI PASSWORD GURU -->
+      <BaseModal :open="!!resetTarget" title="Ganti Password Guru" @close="closeReset">
+        <div v-if="!newPassword" class="space-y-4">
+          <p class="text-sm text-muted-foreground">
+            Ganti password <span class="font-medium text-foreground">{{ resetTarget?.user?.name }}</span>?
+            Password lama tidak berlaku dan sesi aktif akan dicabut.
+          </p>
+          <BaseInput
+            v-model="customPassword"
+            label="Password Baru (opsional)"
+            placeholder="Kosongkan untuk generate otomatis"
+            type="text"
+            autocomplete="off"
+          />
+          <p v-if="customPassword && customPassword.length < 8" class="text-xs text-destructive">
+            Minimal 8 karakter.
+          </p>
+        </div>
+        <div v-else class="space-y-3">
+          <p class="text-sm text-muted-foreground">
+            Password baru untuk <span class="font-medium text-foreground">{{ resetTarget?.user?.name }}</span>:
+          </p>
+          <div class="flex items-center justify-between rounded-lg border border-primary/40 bg-primary/5 px-4 py-3">
+            <code class="font-mono text-lg font-bold tracking-wider text-primary">{{ newPassword }}</code>
+            <BaseButton variant="outline" size="sm" @click="copyPassword"><Copy /> Salin</BaseButton>
+          </div>
+          <p class="text-xs text-muted-foreground">Catat dan bagikan kepada guru — tidak akan ditampilkan lagi.</p>
+        </div>
+
+        <template #footer>
+          <template v-if="!newPassword">
+            <BaseButton variant="outline" @click="closeReset">Batal</BaseButton>
+            <BaseButton :loading="resetting" @click="submitReset"><KeyRound /> Simpan</BaseButton>
+          </template>
+          <BaseButton v-else @click="closeReset">Selesai</BaseButton>
+        </template>
+      </BaseModal>
   </AppShell>
 </template>

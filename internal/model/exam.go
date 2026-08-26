@@ -16,6 +16,7 @@ type Exam struct {
 	Description           *string    `gorm:"type:text" json:"description"`
 	SubjectID             uuid.UUID  `gorm:"type:uuid;not null;index:idx_exams_subject_id" json:"subject_id"`
 	AcademicYearID        *uuid.UUID `gorm:"type:uuid;index:idx_exams_academic_year_id" json:"academic_year_id"`
+	CreatedBy             *uuid.UUID `gorm:"type:uuid;index:idx_exams_created_by" json:"-"`
 	QuestionBankID        *uuid.UUID `gorm:"type:uuid;index:idx_exams_question_bank_id" json:"question_bank_id"`
 	Status                string     `gorm:"type:varchar(20);not null;default:'draft'" json:"status"`
 	DurationMinutes       int        `gorm:"not null;default:60" json:"duration_minutes"`

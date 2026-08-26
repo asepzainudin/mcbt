@@ -1,6 +1,7 @@
 import { api } from '../lib/axios'
 import type {
   ApiResponse,
+  ExamReview,
   ExamSection,
   MapQuestionsPayload,
   SectionPayload,
@@ -8,6 +9,10 @@ import type {
 } from '../types/api'
 
 export const sectionService = {
+  async review(examId: string): Promise<ExamReview> {
+    return (await api.get<ApiResponse<ExamReview>>(`/exams/${examId}/questions`)).data.data
+  },
+
   async listByExam(examId: string): Promise<ExamSection[]> {
     return (await api.get<ApiResponse<ExamSection[]>>(`/exams/${examId}/sections`)).data.data
   },

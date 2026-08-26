@@ -1,6 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { ShieldCheck, Activity, KeyRound, UserRound } from 'lucide-vue-next'
+import { computed, onMounted, ref } from 'vue'
+import {
+  ShieldCheck,
+  Activity,
+  UserRound,
+  GraduationCap,
+  Users,
+  BookOpenCheck,
+  ClipboardList,
+  Trophy,
+  CheckCircle2,
+  Target,
+  TrendingUp,
+} from 'lucide-vue-next'
 
 import AppShell from '../components/layout/AppShell.vue'
 import BaseBadge, { type BadgeTone } from '../components/ui/BaseBadge.vue'
@@ -9,10 +21,8 @@ import BaseCard from '../components/ui/BaseCard.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
 import { api } from '../lib/axios'
 import { useAuthStore } from '../stores/auth'
-import { useUiStore } from '../stores/ui'
 
 const auth = useAuthStore()
-const ui = useUiStore()
 
 type HealthStatus = 'checking' | 'up' | 'down'
 const health = ref<HealthStatus>('checking')
@@ -37,13 +47,80 @@ const roleToneMap: Record<string, BadgeTone> = {
 
 const roleTone = (role: string): BadgeTone => roleToneMap[role] ?? 'neutral'
 
-function copyTokenHint() {
-  ui.toastInfo('Sesi dikelola otomatis lewat cookie — tidak perlu token manual.')
+// ---- dashboard per role ----
+interface StatItem {
+  label: string
+  value: string | number
+  icon: unknown
 }
 
-const errorSample = () => {
-  ui.openErrorModal('Ini contoh modal error global yang muncul saat server mengembalikan status 500.')
+const loadingStats = ref(false)
+const adminStats = ref<Record<string, number> | null>(null)
+const teacherStats = ref<Record<string, number> | null>(null)
+const studentStats = ref<{
+  assigned_exams: number
+  completed_exams: number
+  passed_exams: number
+  average_score: number | null
+  best_score: number | null
+} | null>(null)
+
+const primaryRole = computed(() => {
+  const roles = auth.user?.roles ?? []
+  if (roles.includes('admin')) return 'admin'
+  if (roles.includes('teacher')) return 'teacher'
+  if (roles.includes('student')) return 'student'
+  return null
+})
+
+function fmtScore(v: number | null | undefined): string {
+  return v == null ? '-' : Number(v).toFixed(1)
 }
+
+const adminCards = computed<StatItem[]>(() => [
+  { label: 'Total Siswa', value: adminStats.value?.total_students ?? '-', icon: Users },
+  { label: 'Total Guru', value: adminStats.value?.total_teachers ?? '-', icon: GraduationCap },
+  { label: 'Bank Soal', value: adminStats.value?.total_question_banks ?? '-', icon: BookOpenCheck },
+  { label: 'Ujian Aktif', value: adminStats.value?.published_exams ?? '-', icon: ClipboardList },
+  { label: 'Ujian Berlangsung', value: adminStats.value?.ongoing_exams ?? '-', icon: Activity },
+  { label: 'Total Percobaan', value: adminStats.value?.total_attempts ?? '-', icon: Trophy },
+])
+
+const teacherCards = computed<StatItem[]>(() => [
+  { label: 'Bank Soal Saya', value: teacherStats.value?.total_banks ?? '-', icon: BookOpenCheck },
+  { label: 'Bank Dipublikasi', value: teacherStats.value?.published_banks ?? '-', icon: CheckCircle2 },
+  { label: 'Total Soal', value: teacherStats.value?.total_questions ?? '-', icon: ClipboardList },
+  { label: 'Ujian Dibuat', value: teacherStats.value?.total_exams ?? '-', icon: Activity },
+  { label: 'Ujian Aktif', value: teacherStats.value?.published_exams ?? '-', icon: Trophy },
+  { label: 'Total Siswa', value: teacherStats.value?.total_students ?? '-', icon: Users },
+])
+
+const studentCards = computed<StatItem[]>(() => [
+  { label: 'Ujian Ditugaskan', value: studentStats.value?.assigned_exams ?? '-', icon: ClipboardList },
+  { label: 'Sudah Dikerjakan', value: studentStats.value?.completed_exams ?? '-', icon: CheckCircle2 },
+  { label: 'Lulus', value: studentStats.value?.passed_exams ?? '-', icon: Trophy },
+  { label: 'Rata-rata Skor', value: fmtScore(studentStats.value?.average_score), icon: TrendingUp },
+  { label: 'Skor Terbaik', value: fmtScore(studentStats.value?.best_score), icon: Target },
+])
+
+async function loadStats() {
+  if (!primaryRole.value) return
+  loadingStats.value = true
+  try {
+    const res = await api.get(`/dashboard/${primaryRole.value}`)
+    const data = res.data?.data
+    if (primaryRole.value === 'admin') adminStats.value = data
+    else if (primaryRole.value === 'teacher') teacherStats.value = data
+    else studentStats.value = data
+  } catch {
+    // dashboard stat gagal dimuat: biarkan kartu tetap tampil dengan '-'
+  } finally {
+    loadingStats.value = false
+  }
+}
+
+onMounted(loadStats)
+
 </script>
 
 <template>
@@ -59,6 +136,52 @@ const errorSample = () => {
       <LoadingState v-if="!auth.user" message="Memuat profil…" />
 
       <template v-else>
+        <!-- statistik sesuai role -->
+        <LoadingState v-if="loadingStats" message="Memuat ringkasan…" />
+
+        <template v-else>
+          <div
+            v-if="primaryRole === 'admin' && adminStats"
+            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <BaseCard v-for="card in adminCards" :key="card.label" class="p-5">
+              <div class="flex items-center gap-2 text-muted-foreground">
+                <component :is="card.icon" class="size-4" />
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ card.label }}</p>
+              </div>
+              <p class="mt-3 text-3xl font-bold tracking-tight">{{ card.value }}</p>
+            </BaseCard>
+
+            <!-- ekspor dipindah ke menu masing-masing -->
+          </div>
+
+          <div
+            v-else-if="primaryRole === 'teacher' && teacherStats"
+            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <BaseCard v-for="card in teacherCards" :key="card.label" class="p-5">
+              <div class="flex items-center gap-2 text-muted-foreground">
+                <component :is="card.icon" class="size-4" />
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ card.label }}</p>
+              </div>
+              <p class="mt-3 text-3xl font-bold tracking-tight">{{ card.value }}</p>
+            </BaseCard>
+          </div>
+
+          <div
+            v-else-if="primaryRole === 'student' && studentStats"
+            class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+          >
+            <BaseCard v-for="card in studentCards" :key="card.label" class="p-5">
+              <div class="flex items-center gap-2 text-muted-foreground">
+                <component :is="card.icon" class="size-4" />
+                <p class="text-xs font-semibold uppercase tracking-wide">{{ card.label }}</p>
+              </div>
+              <p class="mt-3 text-3xl font-bold tracking-tight">{{ card.value }}</p>
+            </BaseCard>
+          </div>
+        </template>
+
         <BaseCard class="relative overflow-hidden p-6">
           <div
             class="pointer-events-none absolute -right-10 -top-10 size-40 rounded-full bg-primary/5 blur-2xl"
@@ -133,20 +256,6 @@ const errorSample = () => {
                 <dd class="max-w-[55%] truncate text-right font-medium">{{ auth.user.name }}</dd>
               </div>
             </dl>
-          </BaseCard>
-
-          <BaseCard class="flex flex-col p-5">
-            <div class="flex items-center gap-2 text-muted-foreground">
-              <KeyRound class="size-4" />
-              <p class="text-xs font-semibold uppercase tracking-wide">Sesi & Keamanan</p>
-            </div>
-            <p class="mt-3 flex-1 text-sm leading-relaxed text-muted-foreground">
-              Token disimpan di HttpOnly cookie dan diperbarui otomatis oleh interceptor.
-            </p>
-            <div class="mt-4 flex flex-wrap gap-2">
-              <BaseButton variant="outline" size="sm" @click="copyTokenHint">Detail Sesi</BaseButton>
-              <BaseButton variant="secondary" size="sm" @click="errorSample">Test Modal 500</BaseButton>
-            </div>
           </BaseCard>
         </div>
       </template>

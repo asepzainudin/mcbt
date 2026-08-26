@@ -13,11 +13,12 @@ import (
 )
 
 type QuestionImportHandler struct {
-	uc *usecase.QuestionImportUsecase
+	uc     *usecase.QuestionImportUsecase
+	access *usecase.AccessUsecase
 }
 
-func NewQuestionImportHandler(uc *usecase.QuestionImportUsecase) *QuestionImportHandler {
-	return &QuestionImportHandler{uc: uc}
+func NewQuestionImportHandler(uc *usecase.QuestionImportUsecase, access *usecase.AccessUsecase) *QuestionImportHandler {
+	return &QuestionImportHandler{uc: uc, access: access}
 }
 
 func (h *QuestionImportHandler) Template(c *gin.Context) {
@@ -44,6 +45,14 @@ func (h *QuestionImportHandler) Validate(c *gin.Context) {
 		c.Error(apperror.New(http.StatusUnprocessableEntity,
 			"question_bank_id wajib UUID yang valid", err))
 		return
+	}
+
+	// guru hanya boleh impor ke bank miliknya
+	if uid, isAdmin, ok := principalActor(c); ok && !isAdmin {
+		if err := h.access.AssertBankOwner(c.Request.Context(), uid, false, bankID); err != nil {
+			c.Error(err)
+			return
+		}
 	}
 
 	f, err := fileHeader.Open()

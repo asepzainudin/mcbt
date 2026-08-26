@@ -3,6 +3,7 @@ package usecase
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -161,7 +162,7 @@ type ResetPasswordResult struct {
 	NewPassword string `json:"new_password"`
 }
 
-func (u *StudentUsecase) ResetPassword(ctx context.Context, id uuid.UUID) (*ResetPasswordResult, error) {
+func (u *StudentUsecase) ResetPassword(ctx context.Context, id uuid.UUID, custom string) (*ResetPasswordResult, error) {
 	student, err := u.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -170,9 +171,18 @@ func (u *StudentUsecase) ResetPassword(ctx context.Context, id uuid.UUID) (*Rese
 		return nil, apperror.Internal(err)
 	}
 
-	newPassword, err := passwordutil.Generate(10)
-	if err != nil {
-		return nil, apperror.Internal(err)
+	newPassword := strings.TrimSpace(custom)
+	if newPassword == "" {
+		newPassword, err = passwordutil.Generate(10)
+		if err != nil {
+			return nil, apperror.Internal(err)
+		}
+	} else if len(newPassword) < 8 {
+		return nil, &apperror.AppError{
+			Code:    apperror.CodeUnprocessable,
+			Message: "Validasi gagal",
+			Details: map[string]string{"new_password": "password minimal 8 karakter"},
+		}
 	}
 
 	hash, err := u.hashPassword(newPassword)

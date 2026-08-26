@@ -19,11 +19,12 @@ func NewQuestionRepository(db *gorm.DB) *QuestionRepository {
 }
 
 type QuestionListParams struct {
-	BankID *uuid.UUID
-	Search string
-	Page   int
-	Limit  int
-	Type   string
+	BankID      *uuid.UUID
+	OwnerUserID *uuid.UUID // data scope guru via bank soal
+	Search      string
+	Page        int
+	Limit       int
+	Type        string
 }
 
 func (r *QuestionRepository) List(ctx context.Context, p QuestionListParams) (*PageResult[model.Question], error) {
@@ -36,11 +37,15 @@ func (r *QuestionRepository) List(ctx context.Context, p QuestionListParams) (*P
 	if p.BankID != nil {
 		q = q.Where("question_bank_id = ?", *p.BankID)
 	}
+	if p.OwnerUserID != nil {
+		q = q.Joins("JOIN question_banks qb ON qb.id = questions.question_bank_id").
+			Where("qb.created_by = ?", *p.OwnerUserID)
+	}
 	if p.Type != "" {
-		q = q.Where("question_type = ?", p.Type)
+		q = q.Where("questions.question_type = ?", p.Type)
 	}
 	if p.Search != "" {
-		q = q.Where("content ILIKE ?", "%"+p.Search+"%")
+		q = q.Where("questions.content ILIKE ?", "%"+p.Search+"%")
 	}
 	if err := q.Count(&total).Error; err != nil {
 		return nil, err

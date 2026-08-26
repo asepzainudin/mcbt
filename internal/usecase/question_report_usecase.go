@@ -18,14 +18,16 @@ type QuestionReportUsecase struct {
 	reports  *repository.QuestionReportRepository
 	attempts *repository.ExamAttemptRepository
 	students *repository.StudentRepository
+	access   *AccessUsecase
 }
 
 func NewQuestionReportUsecase(
 	reports *repository.QuestionReportRepository,
 	attempts *repository.ExamAttemptRepository,
 	students *repository.StudentRepository,
+	access *AccessUsecase,
 ) *QuestionReportUsecase {
-	return &QuestionReportUsecase{reports: reports, attempts: attempts, students: students}
+	return &QuestionReportUsecase{reports: reports, attempts: attempts, students: students, access: access}
 }
 
 type CreateReportInput struct {
@@ -77,8 +79,8 @@ func (u *QuestionReportUsecase) Create(ctx context.Context, in CreateReportInput
 
 type ReportRow = repository.ReportRow
 
-func (u *QuestionReportUsecase) List(ctx context.Context, status string) ([]ReportRow, error) {
-	rows, err := u.reports.ListAll(ctx, status)
+func (u *QuestionReportUsecase) List(ctx context.Context, status string, ownerUserID *uuid.UUID) ([]ReportRow, error) {
+	rows, err := u.reports.ListAll(ctx, status, ownerUserID)
 	if err != nil {
 		return nil, apperror.Internal(err)
 	}
@@ -90,13 +92,20 @@ type ResolveInput struct {
 	Resolution *string
 }
 
-func (u *QuestionReportUsecase) Resolve(ctx context.Context, reportID, resolverID uuid.UUID, in ResolveInput) (*model.QuestionReport, error) {
+func (u *QuestionReportUsecase) Resolve(ctx context.Context, reportID, resolverID uuid.UUID, in ResolveInput, resolverIsAdmin bool) (*model.QuestionReport, error) {
 	report, err := u.reports.FindByID(ctx, reportID)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, apperror.NotFound("Laporan tidak ditemukan", err)
 		}
 		return nil, apperror.Internal(err)
+	}
+
+	// guru hanya boleh menangani laporan pada ujian miliknya
+	if !resolverIsAdmin {
+		if err := u.access.AssertAttemptOwner(ctx, resolverID, false, report.AttemptID); err != nil {
+			return nil, err
+		}
 	}
 
 	validStatus := map[string]bool{

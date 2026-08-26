@@ -40,6 +40,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	)
 	authUC := usecase.NewAuthUsecase(users, tokens)
 	roleUC := usecase.NewRoleUsecase(roles, users)
+	profileUC := usecase.NewProfileUsecase(repository.NewProfileRepository(d.DB), users)
 
 	ayRepo := repository.NewAcademicYearRepository(d.DB)
 	classRepo := repository.NewClassRepository(d.DB)
@@ -48,7 +49,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	attemptRepo := repository.NewExamAttemptRepository(d.DB)
 
 	cookies := handler.NewCookieManager(d.Cfg)
-	authHandler := handler.NewAuthHandler(authUC, cookies)
+	authHandler := handler.NewAuthHandler(authUC, cookies, profileUC)
 	roleHandler := handler.NewRoleHandler(roleUC)
 	ayHandler := handler.NewAcademicYearHandler(usecase.NewAcademicYearUsecase(ayRepo))
 	classHandler := handler.NewClassHandler(usecase.NewClassUsecase(classRepo, ayRepo))
@@ -83,8 +84,10 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 		usecase.NewQuestionUsecase(questionRepo, bankRepo, examSectionRepo, repository.NewExamAnswerRepository(d.DB)),
 	)
 	examRepo := repository.NewExamRepository(d.DB)
+	accessUC := usecase.NewAccessUsecase(bankRepo, examRepo, examSectionRepo, questionRepo, attemptRepo)
 	examHandler := handler.NewExamHandler(
 		usecase.NewExamUsecase(examRepo, subjectRepo, ayRepo, bankRepo, attemptRepo),
+		accessUC,
 	)
 	examSectionHandler := handler.NewExamSectionHandler(
 		usecase.NewExamSectionUsecase(
@@ -128,9 +131,19 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 		repository.NewQuestionReportRepository(d.DB),
 		attemptRepo,
 		studentRepo,
+		accessUC,
 	)
+	dashboardUc := usecase.NewDashboardUsecase(
+		repository.NewDashboardRepository(d.DB),
+		studentRepo,
+		repository.NewTeacherRepository(d.DB),
+	)
+	resultUc := usecase.NewResultUsecase(repository.NewResultRepository(d.DB), examRepo, studentRepo)
+	exportUc := usecase.NewExportUsecase(resultUc, examRepo, studentRepo, repository.NewTeacherRepository(d.DB))
+	dashboardHandler := handler.NewDashboardHandler(dashboardUc)
+	exportHandler := handler.NewExportHandler(exportUc)
 	attemptEngineHandler := handler.NewAttemptEngineHandler(attemptEngineUc)
-	questionReportHandler := handler.NewQuestionReportHandler(questionReportUc)
+	questionReportHandler := handler.NewQuestionReportHandler(questionReportUc, accessUC)
 	candidateExamHandler := handler.NewCandidateExamHandler(
 		usecase.NewCandidateExamUsecase(attemptRepo, studentRepo, examScheduleRepo, examRepo, examParticipantRepo),
 		attemptEngineUc,
@@ -139,6 +152,7 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	)
 	questionImportHandler := handler.NewQuestionImportHandler(
 		usecase.NewQuestionImportUsecase(usecase.NewImportTokenStore(), questionRepo),
+		accessUC,
 	)
 	mediaHandler := handler.NewMediaHandler(
 		usecase.NewMediaUsecase(mediaRepo, storageClient, int64(d.Cfg.MaxUploadMB)<<20),
@@ -164,25 +178,26 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 	protected := v1.Group("", middleware.Authenticate(d.Log, tokens, users))
 	{
 		protected.GET("/auth/me", authHandler.Me)
+		protected.GET("/auth/profile", authHandler.Profile)
+		protected.PUT("/auth/profile", authHandler.UpdateProfile)
 		protected.PUT("/auth/change-password", authHandler.ChangePassword)
 
 		adminOnly := protected.Group("", middleware.RequireRoles("admin"))
+		staffOnly := protected.Group("", middleware.RequireRoles("admin", "teacher"))
 		{
+			// ---------- ADMIN ONLY ----------
 			adminOnly.GET("/roles", roleHandler.List)
 			adminOnly.POST("/roles/assign", roleHandler.Assign)
 
-			adminOnly.GET("/academic-years", ayHandler.List)
 			adminOnly.POST("/academic-years", ayHandler.Create)
 			adminOnly.PUT("/academic-years/:id", ayHandler.Update)
 			adminOnly.PATCH("/academic-years/:id/activate", ayHandler.Activate)
 			adminOnly.DELETE("/academic-years/:id", ayHandler.Delete)
 
-			adminOnly.GET("/classes", classHandler.List)
 			adminOnly.POST("/classes", classHandler.Create)
 			adminOnly.PUT("/classes/:id", classHandler.Update)
 			adminOnly.DELETE("/classes/:id", classHandler.Delete)
 
-			adminOnly.GET("/subjects", subjectHandler.List)
 			adminOnly.POST("/subjects", subjectHandler.Create)
 			adminOnly.PUT("/subjects/:id", subjectHandler.Update)
 			adminOnly.DELETE("/subjects/:id", subjectHandler.Delete)
@@ -193,73 +208,100 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			adminOnly.GET("/teachers/:id", teacherHandler.Get)
 			adminOnly.POST("/teachers", teacherHandler.Create)
 			adminOnly.PUT("/teachers/:id", teacherHandler.Update)
+			adminOnly.POST("/teachers/:id/reset-password", teacherHandler.ResetPassword)
 			adminOnly.DELETE("/teachers/:id", teacherHandler.Delete)
 
-			adminOnly.GET("/students", studentHandler.List)
+			// siswa: tulis hanya admin; lihat di staffOnly
 			adminOnly.GET("/students/import/template", studentHandler.Template)
 			adminOnly.POST("/students/import", studentHandler.Import)
 			adminOnly.POST("/students/:id/change-class", studentHandler.ChangeClass)
 			adminOnly.POST("/students/:id/reset-password", studentHandler.ResetPassword)
-			adminOnly.GET("/students/:id", studentHandler.Get)
 			adminOnly.POST("/students", studentHandler.Create)
 			adminOnly.PUT("/students/:id", studentHandler.Update)
 			adminOnly.DELETE("/students/:id", studentHandler.Delete)
 
-			adminOnly.GET("/question-banks", bankHandler.List)
-			adminOnly.POST("/question-banks", bankHandler.Create)
-			adminOnly.POST("/question-banks/:id/clone", bankHandler.Clone)
-			adminOnly.PATCH("/question-banks/:id/publish", bankHandler.Publish)
-			adminOnly.PATCH("/question-banks/:id/archive", bankHandler.Archive)
-			adminOnly.PUT("/question-banks/:id", bankHandler.Update)
-			adminOnly.DELETE("/question-banks/:id", bankHandler.Delete)
+			adminOnly.GET("/export/students", exportHandler.Students)
+			adminOnly.GET("/export/teachers", exportHandler.Teachers)
 
-			adminOnly.GET("/questions/import/template", questionImportHandler.Template)
-			adminOnly.POST("/questions/import/validate", questionImportHandler.Validate)
-			adminOnly.POST("/questions/import/process", questionImportHandler.Process)
+			// ---------- STAFF (ADMIN + GURU) ----------
+			// master data read-only utk kebutuhan form guru
+			staffOnly.GET("/academic-years", ayHandler.List)
+			staffOnly.GET("/classes", classHandler.List)
+			staffOnly.GET("/subjects", subjectHandler.List)
 
-			adminOnly.POST("/media/upload", mediaHandler.Upload)
-			protected.GET("/media/:id/file", mediaHandler.File)
+			// menu siswa: guru read-only
+			staffOnly.GET("/students", studentHandler.List)
+			staffOnly.GET("/students/:id", studentHandler.Get)
 
-			adminOnly.GET("/questions", questionHandler.List)
-			adminOnly.GET("/questions/:id/preview", questionHandler.Preview)
-			adminOnly.GET("/questions/:id", questionHandler.Get)
-			adminOnly.POST("/question-banks/:id/questions", questionHandler.CreateInBank)
-			adminOnly.PUT("/questions/:id", questionHandler.Update)
-			adminOnly.DELETE("/questions/:id", questionHandler.Delete)
-			adminOnly.PUT("/questions/:id/options/reorder", questionHandler.ReorderOptions)
-			adminOnly.PUT("/questions/:id/options/:option_id", questionHandler.UpdateOption)
+			// media (rich text editor soal)
+			staffOnly.POST("/media/upload", mediaHandler.Upload)
 
-			adminOnly.GET("/exams", examHandler.List)
-			adminOnly.POST("/exams", examHandler.Create)
-			adminOnly.GET("/exams/:id", examHandler.Get)
-			adminOnly.PUT("/exams/:id", examHandler.Update)
-			adminOnly.PUT("/exams/:id/settings", examHandler.UpdateSettings)
-			adminOnly.PATCH("/exams/:id/publish", examHandler.Publish)
-			adminOnly.PATCH("/exams/:id/close", examHandler.Close)
-			adminOnly.DELETE("/exams/:id", examHandler.Delete)
+			// bank soal: CRUD penuh, scope milik guru
+			staffOnly.GET("/question-banks", bankHandler.List)
+			staffOnly.POST("/question-banks", bankHandler.Create)
+			staffOnly.POST("/question-banks/:id/clone", dataScopeGuard(accessUC, "bank"), bankHandler.Clone)
+			staffOnly.PATCH("/question-banks/:id/publish", dataScopeGuard(accessUC, "bank"), bankHandler.Publish)
+			staffOnly.PATCH("/question-banks/:id/archive", dataScopeGuard(accessUC, "bank"), bankHandler.Archive)
+			staffOnly.PUT("/question-banks/:id", dataScopeGuard(accessUC, "bank"), bankHandler.Update)
+			staffOnly.DELETE("/question-banks/:id", dataScopeGuard(accessUC, "bank"), bankHandler.Delete)
 
-			adminOnly.POST("/exams/:id/calculate-grades", gradingHandler.CalculateGrades)
-			adminOnly.GET("/exams/:id/ungraded-essays", gradingHandler.UngradedEssays)
-			adminOnly.GET("/exams/:id/grading", gradingHandler.GradingSheet)
-			adminOnly.PUT("/attempts/:id/grade-essay", gradingHandler.GradeEssay)
+			staffOnly.GET("/questions/import/template", questionImportHandler.Template)
+			staffOnly.POST("/questions/import/validate", questionImportHandler.Validate)
+			staffOnly.POST("/questions/import/process", questionImportHandler.Process)
 
-			adminOnly.GET("/exams/:id/results", resultHandler.ExamResults)
-			adminOnly.PATCH("/exams/:id/publish-results", resultHandler.PublishResults)
-			adminOnly.GET("/exams/:id/sections", examSectionHandler.ListByExam)
-			adminOnly.POST("/exams/:id/sections", examSectionHandler.Create)
+			staffOnly.GET("/questions", questionHandler.List)
+			staffOnly.GET("/questions/:id/preview", questionHandler.Preview)
+			staffOnly.GET("/questions/:id", questionHandler.Get)
+			staffOnly.POST("/question-banks/:id/questions", dataScopeGuard(accessUC, "bank"), questionHandler.CreateInBank)
+			staffOnly.PUT("/questions/:id", dataScopeGuard(accessUC, "question"), questionHandler.Update)
+			staffOnly.DELETE("/questions/:id", dataScopeGuard(accessUC, "question"), questionHandler.Delete)
+			staffOnly.PUT("/questions/:id/options/reorder", dataScopeGuard(accessUC, "question"), questionHandler.ReorderOptions)
+			staffOnly.PUT("/questions/:id/options/:option_id", dataScopeGuard(accessUC, "question"), questionHandler.UpdateOption)
 
-			adminOnly.PUT("/sections/:id", examSectionHandler.Update)
-			adminOnly.DELETE("/sections/:id", examSectionHandler.Delete)
-			adminOnly.GET("/sections/:id/questions", examSectionHandler.ListQuestions)
-			adminOnly.POST("/sections/:id/questions", examSectionHandler.MapQuestions)
+			// ujian: CRUD penuh, scope via bank soal
+			staffOnly.GET("/exams", examHandler.List)
+			staffOnly.POST("/exams", examHandler.Create)
+			staffOnly.GET("/exams/:id", dataScopeGuard(accessUC, "exam"), examHandler.Get)
+			staffOnly.PUT("/exams/:id", dataScopeGuard(accessUC, "exam"), examHandler.Update)
+			staffOnly.PUT("/exams/:id/settings", dataScopeGuard(accessUC, "exam"), examHandler.UpdateSettings)
+			staffOnly.PATCH("/exams/:id/publish", dataScopeGuard(accessUC, "exam"), examHandler.Publish)
+			staffOnly.PATCH("/exams/:id/close", dataScopeGuard(accessUC, "exam"), examHandler.Close)
+			staffOnly.DELETE("/exams/:id", dataScopeGuard(accessUC, "exam"), examHandler.Delete)
 
-			adminOnly.POST("/exams/:id/schedules", examScheduleHandler.Create)
-			adminOnly.GET("/exams/:id/schedules", examScheduleHandler.GetByExam)
-			adminOnly.PUT("/schedules/:id", examScheduleHandler.Update)
-			adminOnly.DELETE("/schedules/:id", examScheduleHandler.Delete)
-			adminOnly.POST("/schedules/:id/generate-token", examScheduleHandler.GenerateToken)
+			staffOnly.POST("/exams/:id/calculate-grades", dataScopeGuard(accessUC, "exam"), gradingHandler.CalculateGrades)
+			staffOnly.GET("/exams/:id/ungraded-essays", dataScopeGuard(accessUC, "exam"), gradingHandler.UngradedEssays)
+			staffOnly.GET("/exams/:id/grading", dataScopeGuard(accessUC, "exam"), gradingHandler.GradingSheet)
+			staffOnly.PUT("/attempts/:id/grade-essay", dataScopeGuard(accessUC, "attempt"), gradingHandler.GradeEssay)
 
-			adminOnly.GET("/exams/:id/participants", examParticipantHandler.List)
+			staffOnly.GET("/exams/:id/results", dataScopeGuard(accessUC, "exam"), resultHandler.ExamResults)
+			staffOnly.PATCH("/exams/:id/publish-results", dataScopeGuard(accessUC, "exam"), resultHandler.PublishResults)
+			staffOnly.GET("/exams/:id/export", dataScopeGuard(accessUC, "exam"), exportHandler.ExamResults)
+
+			staffOnly.GET("/exams/:id/questions", dataScopeGuard(accessUC, "exam"), examSectionHandler.Review)
+			staffOnly.GET("/exams/:id/sections", dataScopeGuard(accessUC, "exam"), examSectionHandler.ListByExam)
+			staffOnly.POST("/exams/:id/sections", dataScopeGuard(accessUC, "exam"), examSectionHandler.Create)
+			staffOnly.PUT("/sections/:id", dataScopeGuard(accessUC, "section"), examSectionHandler.Update)
+			staffOnly.DELETE("/sections/:id", dataScopeGuard(accessUC, "section"), examSectionHandler.Delete)
+			staffOnly.GET("/sections/:id/questions", dataScopeGuard(accessUC, "section"), examSectionHandler.ListQuestions)
+			staffOnly.POST("/sections/:id/questions", dataScopeGuard(accessUC, "section"), examSectionHandler.MapQuestions)
+			staffOnly.DELETE("/sections/:id/questions/:question_id", dataScopeGuard(accessUC, "section"), examSectionHandler.RemoveQuestion)
+
+			staffOnly.POST("/exams/:id/schedules", dataScopeGuard(accessUC, "exam"), examScheduleHandler.Create)
+			staffOnly.GET("/exams/:id/schedules", dataScopeGuard(accessUC, "exam"), examScheduleHandler.GetByExam)
+			staffOnly.PUT("/schedules/:id", dataScopeGuard(accessUC, "exam"), examScheduleHandler.Update)
+			staffOnly.DELETE("/schedules/:id", dataScopeGuard(accessUC, "exam"), examScheduleHandler.Delete)
+			staffOnly.POST("/schedules/:id/generate-token", dataScopeGuard(accessUC, "exam"), examScheduleHandler.GenerateToken)
+
+			staffOnly.GET("/exams/:id/participants", dataScopeGuard(accessUC, "exam"), examParticipantHandler.List)
+			staffOnly.POST("/exams/:id/participants/assign-class", dataScopeGuard(accessUC, "exam"), examParticipantHandler.AssignClass)
+			staffOnly.POST("/exams/:id/participants/assign-individual", dataScopeGuard(accessUC, "exam"), examParticipantHandler.AssignIndividual)
+			staffOnly.DELETE("/exams/:id/participants/:participant_id", dataScopeGuard(accessUC, "exam"), examParticipantHandler.Remove)
+
+			// laporan soal: guru menangani laporan pada ujiannya sendiri
+			staffOnly.GET("/question-reports", questionReportHandler.List)
+			staffOnly.PATCH("/question-reports/:id/resolve", questionReportHandler.Resolve)
+
+			// ---------- SISWA (CANDIDATE) ----------
 			candidate := protected.Group("/candidate", middleware.RequireRoles("student"))
 			{
 				candidate.GET("/exams", candidateExamHandler.ListExams)
@@ -277,14 +319,14 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 				candidate.POST("/attempts/:id/submit", attemptEngineHandler.Submit)
 				candidate.GET("/results", resultHandler.CandidateResults)
 			}
-
-			adminOnly.POST("/exams/:id/participants/assign-class", examParticipantHandler.AssignClass)
-			adminOnly.POST("/exams/:id/participants/assign-individual", examParticipantHandler.AssignIndividual)
-			adminOnly.DELETE("/exams/:id/participants/:participant_id", examParticipantHandler.Remove)
 			protected.GET("/students/:id/results", resultHandler.StudentResults)
-			adminOnly.GET("/question-reports", questionReportHandler.List)
-			adminOnly.PATCH("/question-reports/:id/resolve", questionReportHandler.Resolve)
-			adminOnly.DELETE("/sections/:id/questions/:question_id", examSectionHandler.RemoveQuestion)
+
+			dash := protected.Group("/dashboard")
+			{
+				dash.GET("/admin", middleware.RequireRoles("admin"), dashboardHandler.Admin)
+				dash.GET("/teacher", middleware.RequireRoles("teacher"), dashboardHandler.Teacher)
+				dash.GET("/student", middleware.RequireRoles("student"), dashboardHandler.Student)
+			}
 		}
 	}
 

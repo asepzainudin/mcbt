@@ -20,6 +20,7 @@ func NewQuestionBankHandler(uc *usecase.QuestionBankUsecase) *QuestionBankHandle
 }
 
 func (h *QuestionBankHandler) List(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	page := clampInt(c.Query("page"), 1, 1, 1_000_000)
 	limit := clampInt(c.Query("limit"), 10, 1, 100)
 
@@ -33,7 +34,8 @@ func (h *QuestionBankHandler) List(c *gin.Context) {
 		subjectID = &id
 	}
 
-	items, total, err := h.uc.List(c.Request.Context(), c.Query("search"), subjectID, page, limit)
+	// semua staff melihat seluruh bank; kepemilikan dicek saat mutasi
+	items, total, err := h.uc.List(c.Request.Context(), c.Query("search"), subjectID, nil, page, limit)
 	if err != nil {
 		c.Error(err)
 		return
@@ -41,7 +43,7 @@ func (h *QuestionBankHandler) List(c *gin.Context) {
 
 	data := make([]ginH, 0, len(items))
 	for i := range items {
-		data = append(data, bankResponse(&items[i]))
+		data = append(data, bankResponseActor(&items[i], actorID, actorIsAdmin))
 	}
 	response.SuccessWithMeta(c, http.StatusOK, "Bank soal ditemukan", data, paginationMeta(page, limit, total))
 }
@@ -90,19 +92,24 @@ func bindQuestionBankRequest(c *gin.Context) (usecase.QuestionBankInput, bool) {
 }
 
 func (h *QuestionBankHandler) Create(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	in, ok := bindQuestionBankRequest(c)
 	if !ok {
 		return
+	}
+	if uid, _, ok2 := principalActor(c); ok2 {
+		in.CreatedBy = &uid // bank dimiliki pembuatnya
 	}
 	qb, err := h.uc.Create(c.Request.Context(), in)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	response.Success(c, http.StatusCreated, "Bank soal dibuat", bankResponse(qb))
+	response.Success(c, http.StatusCreated, "Bank soal dibuat", bankResponseActor(qb, actorID, actorIsAdmin))
 }
 
 func (h *QuestionBankHandler) Update(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Error(apperror.BadRequest("ID tidak valid", err))
@@ -117,7 +124,7 @@ func (h *QuestionBankHandler) Update(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	response.Success(c, http.StatusOK, "Bank soal diperbarui", bankResponse(qb))
+	response.Success(c, http.StatusOK, "Bank soal diperbarui", bankResponseActor(qb, actorID, actorIsAdmin))
 }
 
 func (h *QuestionBankHandler) Delete(c *gin.Context) {
@@ -134,20 +141,27 @@ func (h *QuestionBankHandler) Delete(c *gin.Context) {
 }
 
 func (h *QuestionBankHandler) Clone(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Error(apperror.BadRequest("ID tidak valid", err))
 		return
 	}
-	qb, err := h.uc.Clone(c.Request.Context(), id)
+	actorID, _, ok := principalActor(c)
+	if !ok {
+		c.Error(apperror.New(http.StatusUnauthorized, "Authentication required", nil))
+		return
+	}
+	qb, err := h.uc.Clone(c.Request.Context(), id, actorID)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	response.Success(c, http.StatusCreated, "Bank soal berhasil dikloning", bankResponse(qb))
+	response.Success(c, http.StatusCreated, "Bank soal berhasil dikloning", bankResponseActor(qb, actorID, actorIsAdmin))
 }
 
 func (h *QuestionBankHandler) Publish(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Error(apperror.BadRequest("ID tidak valid", err))
@@ -158,10 +172,11 @@ func (h *QuestionBankHandler) Publish(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	response.Success(c, http.StatusOK, "Bank soal dipublikasikan", bankResponse(qb))
+	response.Success(c, http.StatusOK, "Bank soal dipublikasikan", bankResponseActor(qb, actorID, actorIsAdmin))
 }
 
 func (h *QuestionBankHandler) Archive(c *gin.Context) {
+	actorID, actorIsAdmin := examActor(c)
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.Error(apperror.BadRequest("ID tidak valid", err))
@@ -172,5 +187,5 @@ func (h *QuestionBankHandler) Archive(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	response.Success(c, http.StatusOK, "Bank soal diarsipkan", bankResponse(qb))
+	response.Success(c, http.StatusOK, "Bank soal diarsipkan", bankResponseActor(qb, actorID, actorIsAdmin))
 }

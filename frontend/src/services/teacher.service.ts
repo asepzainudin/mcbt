@@ -32,6 +32,13 @@ function clean(p: TeacherListParams): Record<string, string | number> {
 }
 
 export const teacherService = {
+  async resetPassword(id: string, newPassword?: string): Promise<{ new_password: string }> {
+    const body = newPassword ? { new_password: newPassword } : {}
+    return (
+      await api.post<ApiResponse<{ new_password: string }>>(`/teachers/${id}/reset-password`, body)
+    ).data.data
+  },
+
   async list(
     params: TeacherListParams,
   ): Promise<{ data: Teacher[]; meta: PaginationMeta | null }> {

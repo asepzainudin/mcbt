@@ -13,11 +13,12 @@ import (
 )
 
 type QuestionReportHandler struct {
-	uc *usecase.QuestionReportUsecase
+	uc     *usecase.QuestionReportUsecase
+	access *usecase.AccessUsecase
 }
 
-func NewQuestionReportHandler(uc *usecase.QuestionReportUsecase) *QuestionReportHandler {
-	return &QuestionReportHandler{uc: uc}
+func NewQuestionReportHandler(uc *usecase.QuestionReportUsecase, access *usecase.AccessUsecase) *QuestionReportHandler {
+	return &QuestionReportHandler{uc: uc, access: access}
 }
 
 type createReportRequest struct {
@@ -68,7 +69,11 @@ func (h *QuestionReportHandler) Create(c *gin.Context) {
 
 // List: admin lihat semua laporan (opsional filter ?status=).
 func (h *QuestionReportHandler) List(c *gin.Context) {
-	reports, err := h.uc.List(c.Request.Context(), c.Query("status"))
+	var ownerUserID *uuid.UUID
+	if uid, isAdmin, ok := principalActor(c); ok && !isAdmin {
+		ownerUserID = &uid // guru hanya melihat laporan pada ujiannya
+	}
+	reports, err := h.uc.List(c.Request.Context(), c.Query("status"), ownerUserID)
 	if err != nil {
 		c.Error(err)
 		return
@@ -107,7 +112,7 @@ func (h *QuestionReportHandler) Resolve(c *gin.Context) {
 	report, err := h.uc.Resolve(c.Request.Context(), reportID, resolverID, usecase.ResolveInput{
 		Status:     req.Status,
 		Resolution: req.Resolution,
-	})
+	}, principal.HasRole("admin"))
 	if err != nil {
 		c.Error(err)
 		return

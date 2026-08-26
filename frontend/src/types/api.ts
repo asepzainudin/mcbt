@@ -120,6 +120,7 @@ export interface MediaRef {
 export type BankStatus = 'draft' | 'published' | 'archived'
 
 export interface QuestionBank {
+  can_manage?: boolean
   id: string
   code: string
   title: string
@@ -190,6 +191,7 @@ export interface QuestionPayload {
 export type ExamStatus = 'draft' | 'published' | 'closed'
 
 export interface Exam {
+  can_manage?: boolean
   id: string
   title: string
   description: string | null
@@ -351,4 +353,39 @@ export interface QuestionReport {
   resolved_by?: string | null
   resolved_at?: string | null
   created_at: string
+}
+
+// ---- Review soal ujian ----
+export interface QuestionReview {
+  id: string
+  type: string
+  text: string | null
+  content: string | null
+  score_weight: number
+  explanation: string | null
+  answer_keys: string[]
+  options: {
+    id: string
+    option_key: string
+    label?: string
+    text?: string
+    content?: string
+    is_correct: boolean
+  }[]
+}
+
+export interface ExamReviewSection {
+  id: string
+  name: string
+  sequence: number
+  question_count: number
+  total_score: number
+  questions: QuestionReview[]
+}
+
+export interface ExamReview {
+  exam_id: string
+  total_questions: number
+  total_score: number
+  sections: ExamReviewSection[]
 }

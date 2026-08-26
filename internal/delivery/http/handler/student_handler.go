@@ -196,7 +196,12 @@ func (h *StudentHandler) ResetPassword(c *gin.Context) {
 		return
 	}
 
-	result, err := h.uc.ResetPassword(c.Request.Context(), id)
+	var req struct {
+		NewPassword string `json:"new_password"`
+	}
+	_ = c.ShouldBindJSON(&req) // opsional: kosong = generate acak
+
+	result, err := h.uc.ResetPassword(c.Request.Context(), id, req.NewPassword)
 	if err != nil {
 		c.Error(err)
 		return

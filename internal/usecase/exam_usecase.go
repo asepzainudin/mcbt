@@ -37,6 +37,7 @@ type ExamInput struct {
 	SubjectID      uuid.UUID
 	AcademicYearID *uuid.UUID
 	QuestionBankID *uuid.UUID
+	CreatedBy      *uuid.UUID // pembuat ujian (untuk data scope guru)
 }
 
 type ExamSettingsInput struct {
@@ -153,6 +154,7 @@ func (u *ExamUsecase) Create(ctx context.Context, in ExamInput) (*model.Exam, er
 		SubjectID:      in.SubjectID,
 		AcademicYearID: in.AcademicYearID,
 		QuestionBankID: in.QuestionBankID,
+		CreatedBy:      in.CreatedBy,
 		Status:         model.ExamStatusDraft,
 	}
 	if err := u.repo.Create(ctx, exam); err != nil {

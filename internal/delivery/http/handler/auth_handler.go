@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -13,12 +14,13 @@ import (
 )
 
 type AuthHandler struct {
-	auth    *usecase.AuthUsecase
-	cookies *CookieManager
+	auth     *usecase.AuthUsecase
+	cookies  *CookieManager
+	profiles *usecase.ProfileUsecase
 }
 
-func NewAuthHandler(auth *usecase.AuthUsecase, cookies *CookieManager) *AuthHandler {
-	return &AuthHandler{auth: auth, cookies: cookies}
+func NewAuthHandler(auth *usecase.AuthUsecase, cookies *CookieManager, profiles *usecase.ProfileUsecase) *AuthHandler {
+	return &AuthHandler{auth: auth, cookies: cookies, profiles: profiles}
 }
 
 type loginRequest struct {
@@ -147,4 +149,51 @@ func (h *AuthHandler) ChangePassword(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "Password diperbarui", nil)
+}
+
+// Profile: GET /auth/profile — data profil pengguna yang sedang login.
+func (h *AuthHandler) Profile(c *gin.Context) {
+	userID, ok := principalUserID(c)
+	if !ok {
+		c.Error(apperror.New(http.StatusUnauthorized, "Authentication required", nil))
+		return
+	}
+	row, err := h.profiles.Get(c.Request.Context(), userID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Profil pengguna", row)
+}
+
+type updateProfileRequest struct {
+	Name  string  `json:"name" binding:"required,min=2,max=100"`
+	Phone *string `json:"phone" binding:"omitempty,max=20"`
+}
+
+// UpdateProfile: PUT /auth/profile — perbarui nama & telepon sendiri.
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID, ok := principalUserID(c)
+	if !ok {
+		c.Error(apperror.New(http.StatusUnauthorized, "Authentication required", nil))
+		return
+	}
+	var req updateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.Error(err)
+		return
+	}
+	if req.Phone != nil {
+		trimmed := strings.TrimSpace(*req.Phone)
+		req.Phone = &trimmed
+	}
+	row, err := h.profiles.Update(c.Request.Context(), userID, usecase.UpdateProfileInput{
+		Name:  strings.TrimSpace(req.Name),
+		Phone: req.Phone,
+	})
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Profil diperbarui", row)
 }

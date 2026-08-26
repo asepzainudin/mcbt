@@ -59,7 +59,7 @@ type ReportRow struct {
 	ResolvedAt   *time.Time `json:"resolved_at,omitempty"`
 }
 
-func (r *QuestionReportRepository) ListAll(ctx context.Context, status string) ([]ReportRow, error) {
+func (r *QuestionReportRepository) ListAll(ctx context.Context, status string, ownerUserID *uuid.UUID) ([]ReportRow, error) {
 	var rows []ReportRow
 	q := r.db.WithContext(ctx).
 		Table("question_reports qr").
@@ -84,6 +84,10 @@ func (r *QuestionReportRepository) ListAll(ctx context.Context, status string) (
 
 	if status != "" {
 		q = q.Where("qr.status = ?", status)
+	}
+	if ownerUserID != nil {
+		// guru menangani laporan pada ujian buatannya sendiri
+		q = q.Where("e.created_by = ?", *ownerUserID)
 	}
 	err := q.Scan(&rows).Error
 	return rows, err

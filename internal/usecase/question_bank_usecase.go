@@ -32,14 +32,16 @@ type QuestionBankInput struct {
 	Code           string
 	Title          string
 	Description    *string
+	CreatedBy      *uuid.UUID // pemilik bank (guru yang membuat)
 }
 
-func (u *QuestionBankUsecase) List(ctx context.Context, search string, subjectID *uuid.UUID, page, limit int) ([]model.QuestionBank, int64, error) {
+func (u *QuestionBankUsecase) List(ctx context.Context, search string, subjectID *uuid.UUID, ownerUserID *uuid.UUID, page, limit int) ([]model.QuestionBank, int64, error) {
 	result, err := u.repo.List(ctx, repository.BankListParams{
-		Search:    search,
-		SubjectID: subjectID,
-		Page:      page,
-		Limit:     limit,
+		Search:      search,
+		SubjectID:   subjectID,
+		OwnerUserID: ownerUserID,
+		Page:        page,
+		Limit:       limit,
 	})
 	if err != nil {
 		return nil, 0, apperror.Internal(err)
@@ -85,6 +87,7 @@ func (u *QuestionBankUsecase) Create(ctx context.Context, in QuestionBankInput) 
 		Status:         model.BankStatusDraft,
 		Title:          in.Title,
 		Description:    in.Description,
+		CreatedBy:      in.CreatedBy,
 	}
 	if err := u.repo.Create(ctx, qb); err != nil {
 		return nil, err
@@ -126,7 +129,7 @@ func (u *QuestionBankUsecase) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (u *QuestionBankUsecase) Clone(ctx context.Context, id uuid.UUID) (*model.QuestionBank, error) {
+func (u *QuestionBankUsecase) Clone(ctx context.Context, id, actorID uuid.UUID) (*model.QuestionBank, error) {
 	source, err := u.repo.FindByID(ctx, id)
 	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -135,7 +138,7 @@ func (u *QuestionBankUsecase) Clone(ctx context.Context, id uuid.UUID) (*model.Q
 		return nil, apperror.Internal(err)
 	}
 
-	clone, err := u.repo.CloneWithQuestions(ctx, source)
+	clone, err := u.repo.CloneWithQuestions(ctx, source, &actorID)
 	if err != nil {
 		return nil, err
 	}

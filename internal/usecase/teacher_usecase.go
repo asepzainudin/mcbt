@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
@@ -203,4 +204,39 @@ func validateRequired(fields map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// ResetPassword: admin mengganti password guru. Kosong = generate acak.
+func (u *TeacherUsecase) ResetPassword(ctx context.Context, id uuid.UUID, custom string) (*ResetPasswordResult, error) {
+	teacher, err := u.repo.FindByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, apperror.NotFound("Guru tidak ditemukan", err)
+		}
+		return nil, apperror.Internal(err)
+	}
+
+	newPassword := strings.TrimSpace(custom)
+	if newPassword == "" {
+		newPassword, err = passwordutil.Generate(10)
+		if err != nil {
+			return nil, apperror.Internal(err)
+		}
+	} else if len(newPassword) < 8 {
+		return nil, &apperror.AppError{
+			Code:    apperror.CodeUnprocessable,
+			Message: "Validasi gagal",
+			Details: map[string]string{"new_password": "password minimal 8 karakter"},
+		}
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, apperror.Internal(err)
+	}
+
+	if err := u.repo.UpdatePasswordByUser(ctx, teacher.UserID, string(hash)); err != nil {
+		return nil, apperror.Internal(err)
+	}
+	return &ResetPasswordResult{NewPassword: newPassword}, nil
 }

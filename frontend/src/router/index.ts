@@ -18,6 +18,12 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/profile',
+      name: 'profile',
+      component: () => import('../pages/ProfilePage.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
       path: '/roles',
       name: 'roles',
       component: () => import('../pages/RolesPage.vue'),
@@ -51,19 +57,25 @@ const router = createRouter({
       path: '/students',
       name: 'students',
       component: () => import('../pages/StudentsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams',
       name: 'exams',
       component: () => import('../pages/ExamsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams/:id/sections',
       name: 'exam-sections',
       component: () => import('../pages/ExamSectionsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
+    },
+    {
+      path: '/exams/:id/review',
+      name: 'exam-review',
+      component: () => import('../pages/exams/ExamReviewPage.vue'),
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/candidate',
@@ -81,7 +93,7 @@ const router = createRouter({
       path: '/exams/:id/results',
       name: 'exam-results',
       component: () => import('../pages/ExamResultsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/candidate/attempts/:id/discussion',
@@ -93,7 +105,7 @@ const router = createRouter({
       path: '/question-reports',
       name: 'question-reports',
       component: () => import('../pages/QuestionReportsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/my-results',
@@ -105,37 +117,37 @@ const router = createRouter({
       path: '/exams/:id/results',
       name: 'exam-results',
       component: () => import('../pages/ExamResultsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams/:id/answers',
       name: 'exam-answers',
       component: () => import('../pages/ExamAnswersPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams/:id/grading',
       name: 'exam-grading',
       component: () => import('../pages/GradingPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams/:id/schedule',
       name: 'exam-schedule',
       component: () => import('../pages/ExamSchedulePage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/question-banks',
       name: 'question-banks',
       component: () => import('../pages/QuestionBanksPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/question-banks/:id',
       name: 'question-bank-detail',
       component: () => import('../pages/BankQuestionsPage.vue'),
-      meta: { requiresAuth: true, requiresAdmin: true },
+      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/:pathMatch(.*)*',
@@ -167,6 +179,12 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAdmin && !auth.user?.roles.includes('admin')) {
     const ui = useUiStore()
     ui.toastError('Halaman ini hanya untuk admin.')
+    return { name: 'dashboard' }
+  }
+
+  if (to.meta.staff && !(auth.user?.roles.includes('admin') || auth.user?.roles.includes('teacher'))) {
+    const ui = useUiStore()
+    ui.toastError('Halaman ini hanya untuk admin dan guru.')
     return { name: 'dashboard' }
   }
 

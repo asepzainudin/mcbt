@@ -197,3 +197,14 @@ func (r *TeacherRepository) DeleteWithUser(ctx context.Context, teacher *model.T
 		return nil
 	}), "")
 }
+
+// UpdatePasswordByUser mengganti password akun guru + mencabut sesi aktif.
+func (r *TeacherRepository) UpdatePasswordByUser(ctx context.Context, userID uuid.UUID, passwordHash string) error {
+	return r.db.WithContext(ctx).
+		Model(&model.User{}).
+		Where("id = ?", userID).
+		Updates(map[string]any{
+			"password_hash": passwordHash,
+			"token_version": gorm.Expr("token_version + 1"),
+		}).Error
+}

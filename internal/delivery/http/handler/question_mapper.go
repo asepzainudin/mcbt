@@ -34,7 +34,13 @@ func optionKey(label string) string {
 
 // bankResponse maps a QuestionBank to the API envelope (spec fields included).
 func bankResponse(b *model.QuestionBank) ginH {
+	return bankResponseActor(b, uuid.Nil, false)
+}
+
+// bankResponseActor menambahkan can_manage: admin atau pemilik bank.
+func bankResponseActor(b *model.QuestionBank, userID uuid.UUID, isAdmin bool) ginH {
 	return ginH{
+		"can_manage":       isAdmin || (b.CreatedBy != nil && *b.CreatedBy == userID),
 		"id":               b.ID,
 		"code":             b.Code,
 		"title":            b.Title,

@@ -9,6 +9,7 @@ import BaseModal from '../components/ui/BaseModal.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
 import { useUiStore } from '../stores/ui'
+import { api, apiErrorMessage } from '../lib/axios'
 
 const ui = useUiStore()
 
@@ -39,14 +40,12 @@ const statusOptions = [
 async function fetchReports() {
   loading.value = true
   try {
-    const params: Record<string, string> = {}
-    if (statusFilter.value) params.status = statusFilter.value
-    const qs = Object.entries(params).map(([k, v]) => `${k}=${v}`).join('&')
-    const res = await fetch(`/api/v1/question-reports?${qs}`, { credentials: 'include' })
-    const json = await res.json()
-    reports.value = json.data ?? []
-  } catch {
-    ui.toastError('Gagal memuat laporan.')
+    const res = await api.get('/question-reports', {
+      params: statusFilter.value ? { status: statusFilter.value } : {},
+    })
+    reports.value = res.data?.data ?? []
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal memuat laporan.'))
   } finally {
     loading.value = false
   }
@@ -69,19 +68,21 @@ function openResolve(r: ReportRow) {
 
 async function doResolve(status: string) {
   if (!resolveTarget.value) return
+  if (!resolutionText.value.trim()) {
+    ui.toastError('Tulis resolusi / tindak lanjut terlebih dahulu.')
+    return
+  }
   resolving.value = true
   try {
-    await fetch(`/api/v1/question-reports/${resolveTarget.value.id}/resolve`, {
-      method: 'PATCH',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, resolution: resolutionText.value || undefined }),
+    await api.patch(`/question-reports/${resolveTarget.value.id}/resolve`, {
+      status,
+      resolution: resolutionText.value.trim(),
     })
-    ui.toastSuccess('Laporan ditangani.')
+    ui.toastSuccess('Laporan ditangani. Lihat filter Resolved untuk detailnya.')
     resolveModal.value = false
     await fetchReports()
-  } catch {
-    ui.toastError('Gagal menangani laporan.')
+  } catch (err) {
+    ui.toastError(apiErrorMessage(err, 'Gagal menangani laporan.'))
   } finally {
     resolving.value = false
   }

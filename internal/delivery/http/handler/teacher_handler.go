@@ -163,3 +163,24 @@ func (h *TeacherHandler) Template(c *gin.Context) {
 	c.Header("Content-Disposition", "attachment; filename=data_guru_template.xlsx")
 	c.Data(http.StatusOK, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", data)
 }
+
+// ResetPassword: admin mengganti password guru (kosong = generate acak).
+func (h *TeacherHandler) ResetPassword(c *gin.Context) {
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(apperror.BadRequest("ID tidak valid", err))
+		return
+	}
+
+	var req struct {
+		NewPassword string `json:"new_password"`
+	}
+	_ = c.ShouldBindJSON(&req)
+
+	result, err := h.uc.ResetPassword(c.Request.Context(), id, req.NewPassword)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Password guru direset", result)
+}

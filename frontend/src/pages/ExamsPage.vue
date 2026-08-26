@@ -8,6 +8,7 @@ import {
   Send,
   Archive,
   Flag,
+  FileSearch,
   FileText,
   CalendarClock,
   ListTree,
@@ -40,7 +41,6 @@ const ui = useUiStore()
 
 const subjects = ref<{ id: string; name: string; code: string }[]>([])
 const academicYears = ref<{ id: string; year: string; semester: string }[]>([])
-
 onMounted(async () => {
   const [s, ay] = await Promise.all([
     masterDataService.subjects.list({ page: 1, limit: 100 }),
@@ -54,6 +54,7 @@ const subjectOptions = computed(() => [
   { value: '', label: '— Pilih mapel —', disabled: true },
   ...subjects.value.map((s) => ({ value: s.id, label: `${s.code} — ${s.name}` })),
 ])
+
 
 const filterSubject = ref('')
 const filterStatus = ref('')
@@ -278,6 +279,7 @@ async function saveSettings() {
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.passing_grade }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-end items-center gap-1">
+                  <template v-if="e.can_manage !== false">
                   <BaseButton
                     v-if="e.status === 'draft'"
                     size="sm"
@@ -304,6 +306,10 @@ async function saveSettings() {
                   >
                     <Archive /> Tutup
                   </BaseButton>
+                  </template>
+                  <BaseButton variant="ghost" size="icon" title="Review Soal" @click="router.push(`/exams/${e.id}/review`)">
+                    <FileSearch />
+                  </BaseButton>
                   <BaseButton variant="ghost" size="icon" title="Rekap Nilai & Ranking" @click="router.push(`/exams/${e.id}/results`)">
                     <Award />
                   </BaseButton>
@@ -322,21 +328,23 @@ async function saveSettings() {
                   <BaseButton variant="ghost" size="icon" title="Sections" @click="router.push(`/exams/${e.id}/sections`)">
                     <ListTree />
                   </BaseButton>
-                  <BaseButton variant="ghost" size="icon" title="Pengaturan" @click="openSettings(e)">
-                    <Settings2 />
-                  </BaseButton>
-                  <BaseButton variant="ghost" size="icon" title="Edit" @click="crud.openEdit(e)">
-                    <Pencil />
-                  </BaseButton>
-                  <BaseButton
-                    v-if="e.attempts_count === 0"
-                    variant="ghost"
-                    size="icon"
-                    title="Hapus"
-                    @click="crud.askDelete(e)"
-                  >
-                    <Trash2 class="text-destructive" />
-                  </BaseButton>
+                  <template v-if="e.can_manage !== false">
+                    <BaseButton variant="ghost" size="icon" title="Pengaturan" @click="openSettings(e)">
+                      <Settings2 />
+                    </BaseButton>
+                    <BaseButton variant="ghost" size="icon" title="Edit" @click="crud.openEdit(e)">
+                      <Pencil />
+                    </BaseButton>
+                    <BaseButton
+                      v-if="e.attempts_count === 0"
+                      variant="ghost"
+                      size="icon"
+                      title="Hapus"
+                      @click="crud.askDelete(e)"
+                    >
+                      <Trash2 class="text-destructive" />
+                    </BaseButton>
+                  </template>
                 </div>
               </td>
             </tr>

@@ -19,6 +19,7 @@ import {
   FileEdit,
   Trophy,
   Flag,
+  UserRound,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -34,32 +35,46 @@ const { theme, toggle } = useTheme()
 
 const sidebarOpen = ref(false)
 
+const isAdmin = computed(() => auth.user?.roles.includes('admin') ?? false)
+const isTeacher = computed(() => auth.user?.roles.includes('teacher') ?? false)
+const isStaff = computed(() => isAdmin.value || isTeacher.value)
+
 const navItems = computed(() => {
-  const items = [{ to: '/', label: 'Dashboard', icon: LayoutDashboard }]
+  const items = [
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/profile', label: 'Profil', icon: UserRound },
+  ]
   if (auth.user?.roles.includes('student')) {
     items.push({ to: '/candidate', label: 'Ujian Saya', icon: FileEdit })
     items.push({ to: '/my-results', label: 'Hasil Saya', icon: Trophy })
   }
-  if (auth.user?.roles.includes('admin')) {
+  if (isStaff.value) {
     items.push(
       { to: '/exams', label: 'Ujian', icon: ClipboardList },
-      { to: '/roles', label: 'Roles', icon: ShieldCheck },
+      { to: '/question-banks', label: 'Bank Soal', icon: FileQuestion },
+      { to: '/question-reports', label: 'Laporan Soal', icon: Flag },
     )
+  }
+  if (isAdmin.value) {
+    items.push({ to: '/roles', label: 'Roles', icon: ShieldCheck })
   }
   return items
 })
 
 const masterDataItems = computed(() => {
-  if (!auth.user?.roles.includes('admin')) return []
-  return [
-    { to: '/academic-years', label: 'Tahun Ajaran', icon: CalendarDays },
-    { to: '/classes', label: 'Kelas', icon: DoorOpen },
-    { to: '/subjects', label: 'Mata Pelajaran', icon: BookOpen },
-    { to: '/teachers', label: 'Guru', icon: Users },
-    { to: '/students', label: 'Siswa', icon: GraduationCap },
-    { to: '/question-banks', label: 'Bank Soal', icon: FileQuestion },
-    { to: '/question-reports', label: 'Laporan Soal', icon: Flag },
-  ]
+  const items: { to: string; label: string; icon: unknown }[] = []
+  if (isAdmin.value) {
+    items.push(
+      { to: '/academic-years', label: 'Tahun Ajaran', icon: CalendarDays },
+      { to: '/classes', label: 'Kelas', icon: DoorOpen },
+      { to: '/subjects', label: 'Mata Pelajaran', icon: BookOpen },
+      { to: '/teachers', label: 'Guru', icon: Users },
+    )
+  }
+  if (isStaff.value) {
+    items.push({ to: '/students', label: 'Siswa', icon: GraduationCap })
+  }
+  return items
 })
 
 const initials = computed(() => {

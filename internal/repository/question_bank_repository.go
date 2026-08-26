@@ -19,10 +19,11 @@ func NewQuestionBankRepository(db *gorm.DB) *QuestionBankRepository {
 }
 
 type BankListParams struct {
-	Search    string
-	SubjectID *uuid.UUID
-	Page      int
-	Limit     int
+	Search      string
+	SubjectID   *uuid.UUID
+	OwnerUserID *uuid.UUID // data scope guru
+	Page        int
+	Limit       int
 }
 
 func (r *QuestionBankRepository) List(ctx context.Context, p BankListParams) (*PageResult[model.QuestionBank], error) {
@@ -37,6 +38,9 @@ func (r *QuestionBankRepository) List(ctx context.Context, p BankListParams) (*P
 	}
 	if p.Search != "" {
 		q = q.Where("title ILIKE ? OR code ILIKE ?", "%"+p.Search+"%", "%"+p.Search+"%")
+	}
+	if p.OwnerUserID != nil {
+		q = q.Where("created_by = ?", *p.OwnerUserID)
 	}
 	if err := q.Count(&total).Error; err != nil {
 		return nil, err
@@ -101,7 +105,7 @@ func (r *QuestionBankRepository) SetStatus(ctx context.Context, id uuid.UUID, st
 
 // CloneWithQuestions copies the bank (status reset to draft, code suffixed)
 // together with every question and its options.
-func (r *QuestionBankRepository) CloneWithQuestions(ctx context.Context, source *model.QuestionBank) (*model.QuestionBank, error) {
+func (r *QuestionBankRepository) CloneWithQuestions(ctx context.Context, source *model.QuestionBank, createdBy *uuid.UUID) (*model.QuestionBank, error) {
 	var cloneID uuid.UUID
 	err := r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		clone := model.QuestionBank{
@@ -111,6 +115,7 @@ func (r *QuestionBankRepository) CloneWithQuestions(ctx context.Context, source 
 			Status:         model.BankStatusDraft,
 			Title:          source.Title + " (Salinan)",
 			Description:    source.Description,
+			CreatedBy:      createdBy,
 		}
 		if err := tx.Create(&clone).Error; err != nil {
 			return err

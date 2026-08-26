@@ -2,6 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   ArrowRightLeft,
+  FileSpreadsheet,
+  FileText,
   KeyRound,
   Pencil,
   Plus,
@@ -22,12 +24,17 @@ import BaseTable from '../components/ui/BaseTable.vue'
 import EmptyState from '../components/ui/EmptyState.vue'
 import LoadingState from '../components/ui/LoadingState.vue'
 import { useCrudTable } from '../composables/useCrudTable'
+import { useExport } from '../composables/useExport'
 import { masterDataService } from '../services/master-data.service'
 import { studentService } from '../services/student.service'
 import type { SchoolClass, Student } from '../types/api'
 import { useUiStore } from '../stores/ui'
+import { useAuthStore } from '../stores/auth'
 
 const ui = useUiStore()
+const auth = useAuthStore()
+const isAdmin = computed(() => auth.user?.roles.includes('admin') ?? false)
+const { exporting, download } = useExport()
 
 const classes = ref<SchoolClass[]>([])
 const classFilter = ref('')
@@ -110,19 +117,25 @@ async function submitMove() {
 const resetTarget = ref<Student | null>(null)
 const resetting = ref(false)
 const newPassword = ref('')
+const customPassword = ref('')
 
 function openReset(s: Student) {
   resetTarget.value = s
   newPassword.value = ''
+  customPassword.value = ''
 }
 
 async function submitReset() {
   if (!resetTarget.value) return
+  if (customPassword.value && customPassword.value.length < 8) {
+    ui.toastError('Password minimal 8 karakter.')
+    return
+  }
   resetting.value = true
   try {
-    const res = await studentService.resetPassword(resetTarget.value.id)
+    const res = await studentService.resetPassword(resetTarget.value.id, customPassword.value || undefined)
     newPassword.value = res.new_password
-    ui.toastSuccess('Password siswa direset.')
+    ui.toastSuccess('Password siswa diperbarui.')
   } catch {
     ui.toastError('Gagal mereset password.')
   } finally {
@@ -167,8 +180,24 @@ function closeReset() {
               class="h-9 w-44 rounded-lg border border-input bg-transparent pl-9 pr-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </div>
-          <BaseButton variant="outline" @click="showImport = true"><Upload /> Impor</BaseButton>
-          <BaseButton @click="crud.openCreate({ class_id: classFilter })"><Plus /> Tambah</BaseButton>
+          <template v-if="isAdmin">
+            <BaseButton
+              variant="outline"
+              :disabled="exporting === '/export/students?format=xlsx'"
+              @click="download('/export/students?format=xlsx')"
+            >
+              <FileSpreadsheet /> Excel
+            </BaseButton>
+            <BaseButton
+              variant="outline"
+              :disabled="exporting === '/export/students?format=pdf'"
+              @click="download('/export/students?format=pdf')"
+            >
+              <FileText /> PDF
+            </BaseButton>
+            <BaseButton variant="outline" @click="showImport = true"><Upload /> Impor</BaseButton>
+            <BaseButton @click="crud.openCreate({ class_id: classFilter })"><Plus /> Tambah</BaseButton>
+          </template>
         </div>
       </div>
 
@@ -183,7 +212,7 @@ function closeReset() {
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">NIS</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Nama</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kelas</th>
-              <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aksi</th>
+              <th v-if="isAdmin" class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aksi</th>
             </template>
 
             <tr v-for="s in crud.items.value" :key="s.id" class="border-b border-border transition-colors last:border-0 hover:bg-accent/50">
@@ -196,7 +225,7 @@ function closeReset() {
                 <BaseBadge v-if="s.class" tone="outline">{{ s.class.name }}</BaseBadge>
                 <span v-else class="text-xs text-muted-foreground">—</span>
               </td>
-              <td class="px-4 py-3">
+              <td v-if="isAdmin" class="px-4 py-3">
                 <div class="flex justify-end gap-1">
                   <BaseButton variant="ghost" size="icon" aria-label="Pindah kelas" @click="openMove(s)">
                     <ArrowRightLeft />
@@ -260,8 +289,18 @@ function closeReset() {
       <BaseModal :open="!!resetTarget" title="Reset Password Siswa" @close="closeReset">
         <div v-if="!newPassword" class="space-y-4">
           <p class="text-sm text-muted-foreground">
-            Reset password <span class="font-medium text-foreground">{{ resetTarget?.user?.name }}</span>?
+            Ganti password <span class="font-medium text-foreground">{{ resetTarget?.user?.name }}</span>?
             Password lama tidak berlaku dan sesi aktif akan dicabut.
+          </p>
+          <BaseInput
+            v-model="customPassword"
+            label="Password Baru (opsional)"
+            placeholder="Kosongkan untuk generate otomatis"
+            type="text"
+            autocomplete="off"
+          />
+          <p v-if="customPassword && customPassword.length < 8" class="text-xs text-destructive">
+            Minimal 8 karakter.
           </p>
         </div>
         <div v-else class="space-y-3">

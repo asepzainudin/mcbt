@@ -39,7 +39,6 @@ func (h *QuestionHandler) List(c *gin.Context) {
 		}
 		params.BankID = &id
 	}
-
 	items, total, err := h.uc.List(c.Request.Context(), params)
 	if err != nil {
 		c.Error(err)

@@ -34,6 +34,33 @@ const loading = ref(true)
 const banks = ref<QuestionBank[]>([])
 const selectedBanks = ref<Record<string, boolean>>({})
 const totalRandom = ref('')
+const bankSearch = ref('')
+
+const filteredBanks = computed(() => {
+  const q = bankSearch.value.trim().toLowerCase()
+  if (!q) return banks.value
+  return banks.value.filter(
+    (b) =>
+      b.title.toLowerCase().includes(q) ||
+      b.code.toLowerCase().includes(q) ||
+      (b.subject?.name ?? '').toLowerCase().includes(q) ||
+      (b.subject?.code ?? '').toLowerCase().includes(q),
+  )
+})
+
+const selectedBankIds = computed(() =>
+  Object.entries(selectedBanks.value)
+    .filter(([, v]) => v)
+    .map(([k]) => k),
+)
+
+function toggleBank(id: string) {
+  selectedBanks.value[id] = !selectedBanks.value[id]
+}
+
+function clearSelectedBanks() {
+  selectedBanks.value = {}
+}
 
 const typeLabel: Record<string, string> = {
   MULTIPLE_CHOICE: 'PG',
@@ -177,6 +204,7 @@ const loadingMapped = ref(false)
 async function openMap(s: ExamSection) {
   mapTarget.value = s
   selectedBanks.value = {}
+  bankSearch.value = ''
   totalRandom.value = ''
   await loadMapped(s.id)
   // auto-centang bank yang sudah memiliki soal termapping di section ini
@@ -199,9 +227,7 @@ async function loadMapped(sectionId: string) {
 
 async function submitMap() {
   if (!mapTarget.value) return
-  const bankIds = Object.entries(selectedBanks.value)
-    .filter(([, v]) => v)
-    .map(([k]) => k)
+  const bankIds = selectedBankIds.value
   if (bankIds.length === 0) {
     fieldErrors.value = { banks: 'Pilih minimal satu bank soal' }
     return
@@ -336,17 +362,49 @@ async function unmapQuestion(q: SectionQuestion) {
       <BaseModal :open="!!mapTarget" :title="`Mapping Soal — ${mapTarget?.name ?? ''}`" @close="mapTarget = null">
         <div class="max-h-[70vh] space-y-5 overflow-y-auto pr-1">
           <div>
-            <p class="mb-2 text-sm font-medium">Pilih Bank Soal</p>
-            <div class="space-y-1.5">
-              <label
-                v-for="b in banks"
-                :key="b.id"
-                class="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-2.5 text-sm transition-colors hover:bg-accent/50"
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <p class="text-sm font-medium">
+                Pilih Bank Soal
+                <span v-if="selectedBankIds.length" class="ml-1 text-xs font-semibold text-primary">
+                  ({{ selectedBankIds.length }} dipilih)
+                </span>
+              </p>
+              <button
+                v-if="selectedBankIds.length"
+                type="button"
+                class="text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+                @click="clearSelectedBanks"
               >
-                <input v-model="selectedBanks[b.id]" type="checkbox" class="accent-blue-600" />
-                <span class="font-medium">{{ b.title }}</span>
-                <BaseBadge v-if="b.subject" tone="info">{{ b.subject.code }}</BaseBadge>
-              </label>
+                Kosongkan
+              </button>
+            </div>
+
+            <input
+              v-model="bankSearch"
+              placeholder="Cari bank soal / mata pelajaran…"
+              class="h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+
+            <div class="mt-2 flex max-h-40 flex-wrap gap-1.5 overflow-y-auto rounded-lg border border-border p-2">
+              <button
+                v-for="b in filteredBanks"
+                :key="b.id"
+                type="button"
+                :class="
+                  selectedBanks[b.id]
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'bg-background hover:border-primary/40 hover:bg-accent/60'
+                "
+                class="rounded-full border border-border px-3 py-1 text-xs font-medium transition-colors"
+                :title="b.title"
+                @click="toggleBank(b.id)"
+              >
+                {{ b.code }}
+                <span class="opacity-70">· {{ b.title }}</span>
+              </button>
+              <p v-if="filteredBanks.length === 0" class="px-1 py-0.5 text-xs text-muted-foreground">
+                Tidak ada bank yang cocok dengan pencarian.
+              </p>
             </div>
             <p v-if="fieldErrors.banks" class="mt-1.5 text-xs text-destructive">{{ fieldErrors.banks }}</p>
           </div>

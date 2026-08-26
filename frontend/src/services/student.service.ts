@@ -60,9 +60,10 @@ export const studentService = {
     ).data.data
   },
 
-  async resetPassword(id: string): Promise<{ new_password: string }> {
+  async resetPassword(id: string, newPassword?: string): Promise<{ new_password: string }> {
+    const body = newPassword ? { new_password: newPassword } : {}
     return (
-      await api.post<ApiResponse<{ new_password: string }>>(`/students/${id}/reset-password`)
+      await api.post<ApiResponse<{ new_password: string }>>(`/students/${id}/reset-password`, body)
     ).data.data
   },
 

@@ -202,3 +202,54 @@ func (h *ExamSectionHandler) RemoveQuestion(c *gin.Context) {
 	}
 	response.Success(c, http.StatusOK, "Soal dikeluarkan dari section", nil)
 }
+
+// Review: rekap seluruh soal ujian per section untuk direview sebelum ujian.
+func (h *ExamSectionHandler) Review(c *gin.Context) {
+	examID, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		c.Error(apperror.BadRequest("ID ujian tidak valid", err))
+		return
+	}
+
+	groups, err := h.uc.ExamQuestions(c.Request.Context(), examID)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+
+	type sectionOut struct {
+		ID            uuid.UUID `json:"id"`
+		Name          string    `json:"name"`
+		Sequence      int       `json:"sequence"`
+		QuestionCount int       `json:"question_count"`
+		TotalScore    float64   `json:"total_score"`
+		Questions     []ginH    `json:"questions"`
+	}
+	sections := make([]sectionOut, 0, len(groups))
+	totalQuestions := 0
+	totalScore := 0.0
+	for _, g := range groups {
+		qs := make([]ginH, 0, len(g.Questions))
+		score := 0.0
+		for i := range g.Questions {
+			qs = append(qs, questionResponse(&g.Questions[i]))
+			score += g.Questions[i].ScoreWeight
+		}
+		totalQuestions += len(g.Questions)
+		totalScore += score
+		sections = append(sections, sectionOut{
+			ID:            g.Section.ID,
+			Name:          g.Section.Name,
+			Sequence:      g.Section.Sequence,
+			QuestionCount: len(g.Questions),
+			TotalScore:    score,
+			Questions:     qs,
+		})
+	}
+	response.Success(c, http.StatusOK, "Review soal ujian", ginH{
+		"exam_id":         examID,
+		"total_questions": totalQuestions,
+		"total_score":     totalScore,
+		"sections":        sections,
+	})
+}

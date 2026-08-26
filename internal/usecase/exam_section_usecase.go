@@ -215,3 +215,16 @@ func (u *ExamSectionUsecase) ListQuestions(ctx context.Context, sectionID uuid.U
 	}
 	return questions, nil
 }
+
+// ExamQuestions: seluruh soal ujian tergroup per section (untuk review).
+func (u *ExamSectionUsecase) ExamQuestions(ctx context.Context, examID uuid.UUID) ([]repository.ExamQuestionGroup, error) {
+	exam, err := u.exams.FindByID(ctx, examID)
+	if err != nil {
+		return nil, apperror.NotFound("Ujian tidak ditemukan", err)
+	}
+	groups, err := u.sections.ListExamQuestions(ctx, exam)
+	if err != nil {
+		return nil, apperror.Internal(err)
+	}
+	return groups, nil
+}
