@@ -3,17 +3,21 @@
 -- =============================================================
 
 DELETE FROM exam_answers WHERE attempt_id IN (
-    '11111111-ffff-aaaa-bbbb-cccccccc0001',
-    '11111111-ffff-aaaa-bbbb-cccccccc0002',
-    '11111111-ffff-aaaa-bbbb-cccccccc0003',
-    '11111111-ffff-aaaa-bbbb-cccccccc0004'
+    '11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-ffff-aaaa-bbbb-cccccccc0002',
+    '11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-ffff-aaaa-bbbb-cccccccc0004',
+    '11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-ffff-aaaa-bbbb-cccccccc0006',
+    '11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-ffff-aaaa-bbbb-cccccccc0008',
+    '11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-ffff-aaaa-bbbb-cccccccc0010',
+    '11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-ffff-aaaa-bbbb-cccccccc0012'
 );
 
 DELETE FROM exam_attempts WHERE id IN (
-    '11111111-ffff-aaaa-bbbb-cccccccc0001',
-    '11111111-ffff-aaaa-bbbb-cccccccc0002',
-    '11111111-ffff-aaaa-bbbb-cccccccc0003',
-    '11111111-ffff-aaaa-bbbb-cccccccc0004'
+    '11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-ffff-aaaa-bbbb-cccccccc0002',
+    '11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-ffff-aaaa-bbbb-cccccccc0004',
+    '11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-ffff-aaaa-bbbb-cccccccc0006',
+    '11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-ffff-aaaa-bbbb-cccccccc0008',
+    '11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-ffff-aaaa-bbbb-cccccccc0010',
+    '11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-ffff-aaaa-bbbb-cccccccc0012'
 );
 
 DELETE FROM exam_participants WHERE exam_id IN (

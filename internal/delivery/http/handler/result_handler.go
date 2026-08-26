@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -47,6 +48,69 @@ func (h *ResultHandler) CandidateResults(c *gin.Context) {
 		return
 	}
 	response.Success(c, http.StatusOK, "Hasil ujian", rows)
+}
+
+// ExamReport: laporan ujian seluruh siswa dengan filter.
+func (h *ResultHandler) ExamReport(c *gin.Context) {
+	f := repository.ExamReportFilter{
+		Page:  1,
+		Limit: 20,
+	}
+	if raw := c.Query("exam_id"); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			c.Error(apperror.BadRequest("exam_id harus UUID yang valid", err))
+			return
+		}
+		f.ExamID = &id
+	}
+	if raw := c.Query("subject_id"); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			c.Error(apperror.BadRequest("subject_id harus UUID yang valid", err))
+			return
+		}
+		f.SubjectID = &id
+	}
+	if raw := c.Query("class_id"); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			c.Error(apperror.BadRequest("class_id harus UUID yang valid", err))
+			return
+		}
+		f.ClassID = &id
+	}
+	if raw := c.Query("academic_year_id"); raw != "" {
+		id, err := uuid.Parse(raw)
+		if err != nil {
+			c.Error(apperror.BadRequest("academic_year_id harus UUID yang valid", err))
+			return
+		}
+		f.AcademicYearID = &id
+	}
+	if raw := c.Query("date_from"); raw != "" {
+		f.DateFrom = &raw
+	}
+	if raw := c.Query("date_to"); raw != "" {
+		f.DateTo = &raw
+	}
+	if raw := c.Query("page"); raw != "" {
+		if v, err := strconv.Atoi(raw); err == nil && v > 0 {
+			f.Page = v
+		}
+	}
+	if raw := c.Query("limit"); raw != "" {
+		if v, err := strconv.Atoi(raw); err == nil && v > 0 {
+			f.Limit = v
+		}
+	}
+
+	result, err := h.uc.ExamReport(c.Request.Context(), f)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	response.Success(c, http.StatusOK, "Laporan ujian", result)
 }
 
 // ExamResults: rekap nilai + ranking (admin).

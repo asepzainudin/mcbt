@@ -108,16 +108,16 @@ const router = createRouter({
       meta: { requiresAuth: true, staff: true },
     },
     {
+      path: '/laporan-ujian',
+      name: 'laporan-ujian',
+      component: () => import('../pages/LaporanUjianPage.vue'),
+      meta: { requiresAuth: true, staff: true },
+    },
+    {
       path: '/my-results',
       name: 'my-results',
       component: () => import('../pages/StudentResultsPage.vue'),
       meta: { requiresAuth: true, requiresRole: 'student' },
-    },
-    {
-      path: '/exams/:id/results',
-      name: 'exam-results',
-      component: () => import('../pages/ExamResultsPage.vue'),
-      meta: { requiresAuth: true, staff: true },
     },
     {
       path: '/exams/:id/answers',

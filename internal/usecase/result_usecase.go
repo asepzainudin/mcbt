@@ -111,3 +111,8 @@ func (u *ResultUsecase) PublishResults(ctx context.Context, examID uuid.UUID, pu
 	}
 	return u.results.SetResultsPublished(ctx, examID, published)
 }
+
+// ExamReport returns paginated results across all exams with filters.
+func (u *ResultUsecase) ExamReport(ctx context.Context, f repository.ExamReportFilter) (*repository.ExamReportPageResult, error) {
+	return u.results.ExamReport(ctx, f)
+}

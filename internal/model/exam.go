@@ -39,6 +39,7 @@ type Exam struct {
 	Subject      Subject       `gorm:"foreignKey:SubjectID;references:ID" json:"subject,omitempty"`
 	AcademicYear *AcademicYear `gorm:"foreignKey:AcademicYearID;references:ID" json:"academic_year,omitempty"`
 	QuestionBank *QuestionBank `gorm:"foreignKey:QuestionBankID;references:ID" json:"question_bank,omitempty"`
+	Schedule     *ExamSchedule `gorm:"foreignKey:ExamID;references:ID" json:"schedule,omitempty"`
 }
 
 func (Exam) TableName() string { return "exams" }

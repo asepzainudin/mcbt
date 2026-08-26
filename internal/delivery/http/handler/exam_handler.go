@@ -50,6 +50,7 @@ func examResponse(e *model.Exam, userID uuid.UUID, isAdmin bool) ginH {
 		"subject":                 e.Subject,
 		"academic_year":           e.AcademicYear,
 		"question_bank":           e.QuestionBank,
+		"schedule":                e.Schedule,
 		"created_at":              e.CreatedAt,
 		"updated_at":              e.UpdatedAt,
 	}

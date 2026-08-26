@@ -108,6 +108,12 @@ watch([filterSubject, filterStatus], () => {
 const statusTone = (s: string) =>
   s === 'published' ? 'success' : s === 'closed' ? 'warning' : 'neutral'
 
+const fmtDate = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+
+const isScheduleExpired = (e: Exam) =>
+  !!e.schedule?.end_time && new Date(e.schedule.end_time) < new Date()
+
 // ---- modal settings ----
 const settingsOpen = ref(false)
 const settingsExam = ref<Exam | null>(null)
@@ -270,10 +276,14 @@ async function saveSettings() {
                 <p class="mt-0.5 text-xs text-muted-foreground">
                   {{ e.subject?.code }} · {{ e.question_bank?.title ?? 'tanpa bank' }}
                 </p>
+                <p class="mt-0.5 text-xs text-muted-foreground">
+                  {{ fmtDate(e.created_at) }}
+                </p>
               </td>
               <td class="px-4 py-3">
                 <BaseBadge :tone="statusTone(e.status)">{{ e.status }}</BaseBadge>
                 <BaseBadge v-if="e.attempts_count > 0" tone="info" class="ml-1">{{ e.attempts_count }} peserta uji</BaseBadge>
+                <BaseBadge v-if="isScheduleExpired(e)" tone="warning" class="ml-1">Expired</BaseBadge>
               </td>
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.duration_minutes }} mnt</td>
               <td class="px-4 py-3 text-sm text-muted-foreground">{{ e.passing_grade }}</td>

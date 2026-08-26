@@ -301,6 +301,9 @@ func NewRouter(d RouterDeps) (*gin.Engine, error) {
 			staffOnly.GET("/question-reports", questionReportHandler.List)
 			staffOnly.PATCH("/question-reports/:id/resolve", questionReportHandler.Resolve)
 
+			// laporan ujian: rekap seluruh hasil ujian
+			staffOnly.GET("/exam-reports", resultHandler.ExamReport)
+
 			// ---------- SISWA (CANDIDATE) ----------
 			candidate := protected.Group("/candidate", middleware.RequireRoles("student"))
 			{

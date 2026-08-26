@@ -1,5 +1,5 @@
 import { api } from '../lib/axios'
-import type { ApiResponse, Exam } from '../types/api'
+import type { ApiResponse, Exam, PaginationMeta } from '../types/api'
 
 export interface ExamResultRow {
   rank: number
@@ -27,6 +27,40 @@ export interface StudentResultRow {
   submitted_at: string | null
 }
 
+export interface ExamReportRow {
+  attempt_id: string
+  student_id: string
+  student_name: string
+  nis: string
+  class_name: string | null
+  exam_id: string
+  exam_title: string
+  subject_name: string
+  score: number | null
+  passing_grade: number
+  passed: boolean
+  submitted_at: string | null
+}
+
+export interface ExamReportParams {
+  page?: number
+  limit?: number
+  exam_id?: string
+  subject_id?: string
+  class_id?: string
+  academic_year_id?: string
+  date_from?: string
+  date_to?: string
+}
+
+export interface ExamReportResult {
+  items: ExamReportRow[]
+  total: number
+  page: number
+  limit: number
+  total_pages: number
+}
+
 export const resultService = {
   async examResults(examId: string, classId?: string): Promise<ExamResultRow[]> {
     const params: Record<string, string> = {}
@@ -40,6 +74,15 @@ export const resultService = {
     return (
       await api.get<ApiResponse<StudentResultRow[]>>('/candidate/results')
     ).data.data ?? []
+  },
+
+  async examReport(params: ExamReportParams): Promise<ExamReportResult> {
+    const clean: Record<string, string | number> = {}
+    for (const [k, v] of Object.entries(params)) {
+      if (v !== undefined && v !== '') clean[k] = v as string | number
+    }
+    const res = await api.get<ApiResponse<ExamReportResult>>('/exam-reports', { params: clean })
+    return res.data.data
   },
 
   async publishResults(examId: string, published: boolean): Promise<void> {

@@ -130,6 +130,7 @@ export interface QuestionBank {
   description: string | null
   subject?: Subject
   academic_year?: AcademicYear | null
+  created_at?: string
 }
 
 export interface QuestionOption {
@@ -216,6 +217,8 @@ export interface Exam {
   subject?: Subject
   academic_year?: AcademicYear | null
   question_bank?: QuestionBank | null
+  schedule?: ExamSchedule | null
+  created_at?: string
 }
 
 export interface ExamPayload {

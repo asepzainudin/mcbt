@@ -54,7 +54,7 @@ func (r *ExamRepository) List(ctx context.Context, p ExamListParams) (*PageResul
 		return nil, err
 	}
 
-	err := q.Preload("Subject").Preload("AcademicYear").Preload("QuestionBank").
+	err := q.Preload("Subject").Preload("AcademicYear").Preload("QuestionBank").Preload("Schedule").
 		Order("created_at DESC").
 		Limit(p.Limit).Offset((p.Page - 1) * p.Limit).
 		Find(&items).Error
@@ -67,7 +67,7 @@ func (r *ExamRepository) List(ctx context.Context, p ExamListParams) (*PageResul
 func (r *ExamRepository) FindByID(ctx context.Context, id uuid.UUID) (*model.Exam, error) {
 	var e model.Exam
 	err := r.db.WithContext(ctx).
-		Preload("Subject").Preload("AcademicYear").Preload("QuestionBank").
+		Preload("Subject").Preload("AcademicYear").Preload("QuestionBank").Preload("Schedule").
 		First(&e, "id = ?", id).Error
 	if err != nil {
 		return nil, err

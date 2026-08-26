@@ -95,6 +95,9 @@ const statusTone = (s: BankStatus) =>
 const statusLabel = (s: BankStatus) =>
   ({ draft: 'Draft', published: 'Published', archived: 'Archived' })[s] ?? s
 
+const fmtDate = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
+
 // ---- clone / publish / archive ----
 const busyId = ref<string | null>(null)
 
@@ -152,6 +155,7 @@ import { watch } from 'vue'
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Bank</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Mapel</th>
               <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Status</th>
+              <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Dibuat</th>
               <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Aksi</th>
             </template>
 
@@ -169,6 +173,7 @@ import { watch } from 'vue'
               <td class="px-4 py-3">
                 <BaseBadge :tone="statusTone(b.status)">{{ statusLabel(b.status) }}</BaseBadge>
               </td>
+              <td class="px-4 py-3 text-sm text-muted-foreground">{{ fmtDate(b.created_at) }}</td>
               <td class="px-4 py-3">
                 <div class="flex justify-end gap-1">
                   <BaseButton

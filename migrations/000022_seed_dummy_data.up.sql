@@ -193,17 +193,32 @@ INSERT INTO exam_participants (exam_id, student_id, assigned_via) VALUES
     ('11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555566666666', 'class'),
     ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555511111111', 'class'),
     ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555522222222', 'class'),
-    ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555533333333', 'class');
+    ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555533333333', 'class'),
+    ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555544444444', 'class'),
+    ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555555555555', 'class'),
+    ('11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555566666666', 'class');
 
 -- ─── Exam Attempts ───────────────────────────────────────────
+-- UTS Matematika: 6 siswa (X-A + X-B), beragam skor
 INSERT INTO exam_attempts (id, exam_id, student_id, attempt_no, status, started_at, expires_at, submitted_at, score) VALUES
     ('11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555511111111', 1, 'submitted',   '2026-03-10 08:05:00+07', '2026-03-10 09:35:00+07', '2026-03-10 08:45:00+07', 85.00),
     ('11111111-ffff-aaaa-bbbb-cccccccc0002', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555522222222', 1, 'submitted',   '2026-03-10 08:10:00+07', '2026-03-10 09:40:00+07', '2026-03-10 09:20:00+07', 72.50),
-    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555533333333', 1, 'in_progress', '2026-03-10 08:15:00+07', '2026-03-10 09:45:00+07', NULL, NULL),
-    ('11111111-ffff-aaaa-bbbb-cccccccc0004', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555511111111', 1, 'submitted',   '2026-03-11 10:02:00+07', '2026-03-11 11:02:00+07', '2026-03-11 10:40:00+07', 80.00);
+    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555533333333', 1, 'submitted',   '2026-03-10 08:15:00+07', '2026-03-10 09:45:00+07', '2026-03-10 09:10:00+07', 58.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555544444444', 1, 'submitted',   '2026-03-10 08:02:00+07', '2026-03-10 09:32:00+07', '2026-03-10 08:55:00+07', 90.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555555555555', 1, 'submitted',   '2026-03-10 08:08:00+07', '2026-03-10 09:38:00+07', '2026-03-10 09:35:00+07', 65.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-cccc-dddd-eeee-ffffffff0001', '11111111-2222-3333-4444-555566666666', 1, 'submitted',   '2026-03-10 08:12:00+07', '2026-03-10 09:42:00+07', '2026-03-10 09:05:00+07', 78.00);
+
+-- UTS Bahasa Indonesia: 6 siswa (X-A + X-B), beragam skor
+INSERT INTO exam_attempts (id, exam_id, student_id, attempt_no, status, started_at, expires_at, submitted_at, score) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0004', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555511111111', 1, 'submitted',   '2026-03-11 10:02:00+07', '2026-03-11 11:02:00+07', '2026-03-11 10:40:00+07', 80.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0008', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555522222222', 1, 'submitted',   '2026-03-11 10:05:00+07', '2026-03-11 11:05:00+07', '2026-03-11 10:55:00+07', 88.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555533333333', 1, 'submitted',   '2026-03-11 10:03:00+07', '2026-03-11 11:03:00+07', '2026-03-11 10:30:00+07', 70.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0010', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555544444444', 1, 'submitted',   '2026-03-11 10:01:00+07', '2026-03-11 11:01:00+07', '2026-03-11 10:48:00+07', 62.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555555555555', 1, 'submitted',   '2026-03-11 10:04:00+07', '2026-03-11 11:04:00+07', '2026-03-11 10:25:00+07', 50.00),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0012', '11111111-cccc-dddd-eeee-ffffffff0002', '11111111-2222-3333-4444-555566666666', 1, 'submitted',   '2026-03-11 10:06:00+07', '2026-03-11 11:06:00+07', '2026-03-11 10:50:00+07', 75.00);
 
 -- ─── Exam Answers ────────────────────────────────────────────
--- Attempt 1 (Andi - MTK): answered all 5
+-- Attempt 0001 (Andi - MTK): answered all 5 → score 85
 INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
     ('11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'B', FALSE, '2026-03-10 08:10:00+07', 2.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'C', FALSE, '2026-03-10 08:15:00+07', 2.00, TRUE),
@@ -211,15 +226,76 @@ INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, ans
     ('11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'A', FALSE, '2026-03-10 08:35:00+07', 2.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0001', '11111111-bbbb-cccc-dddd-eeeeeeee0005', 'A', FALSE, '2026-03-10 08:40:00+07', 1.00, TRUE);
 
--- Attempt 2 (Bunga - MTK): answered 4/5, 2 wrong
+-- Attempt 0002 (Bunga - MTK): answered 4/5, 2 wrong → score 72.5
 INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
     ('11111111-ffff-aaaa-bbbb-cccccccc0002', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'B', FALSE, '2026-03-10 08:20:00+07', 2.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0002', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'A', FALSE, '2026-03-10 08:30:00+07', 0.00, FALSE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0002', '11111111-bbbb-cccc-dddd-eeeeeeee0003', 'D', FALSE, '2026-03-10 08:45:00+07', 3.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0002', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'B', FALSE, '2026-03-10 09:00:00+07', 0.00, FALSE);
 
--- Attempt 4 (Andi - BIN): answered 3
+-- Attempt 0003 (Citra - MTK): answered 4/5, 3 wrong → score 58
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'C', FALSE, '2026-03-10 08:22:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'C', FALSE, '2026-03-10 08:35:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'C', FALSE, '2026-03-10 08:50:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0003', '11111111-bbbb-cccc-dddd-eeeeeeee0005', 'B', FALSE, '2026-03-10 09:05:00+07', 0.00, FALSE);
+
+-- Attempt 0005 (Dimas - MTK): all correct → score 90
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'B', FALSE, '2026-03-10 08:08:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'C', FALSE, '2026-03-10 08:18:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-bbbb-cccc-dddd-eeeeeeee0003', 'D', FALSE, '2026-03-10 08:28:00+07', 3.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'A', FALSE, '2026-03-10 08:38:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0005', '11111111-bbbb-cccc-dddd-eeeeeeee0005', 'A', FALSE, '2026-03-10 08:48:00+07', 1.00, TRUE);
+
+-- Attempt 0006 (Eka - MTK): 3/5 correct → score 65
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'A', FALSE, '2026-03-10 08:15:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'C', FALSE, '2026-03-10 08:25:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-bbbb-cccc-dddd-eeeeeeee0003', 'C', FALSE, '2026-03-10 08:40:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'A', FALSE, '2026-03-10 09:00:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0006', '11111111-bbbb-cccc-dddd-eeeeeeee0005', 'A', FALSE, '2026-03-10 09:20:00+07', 1.00, TRUE);
+
+-- Attempt 0007 (Fajar - MTK): 4/5 correct → score 78
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-bbbb-cccc-dddd-eeeeeeee0001', 'B', FALSE, '2026-03-10 08:18:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-bbbb-cccc-dddd-eeeeeeee0002', 'D', FALSE, '2026-03-10 08:28:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-bbbb-cccc-dddd-eeeeeeee0003', 'D', FALSE, '2026-03-10 08:42:00+07', 3.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-bbbb-cccc-dddd-eeeeeeee0004', 'A', FALSE, '2026-03-10 08:52:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0007', '11111111-bbbb-cccc-dddd-eeeeeeee0005', 'A', FALSE, '2026-03-10 09:00:00+07', 1.00, TRUE);
+
+-- Attempt 0004 (Andi - BIN): answered 2 MC + 1 essay → score 80
 INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
     ('11111111-ffff-aaaa-bbbb-cccccccc0004', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'B', FALSE, '2026-03-11 10:10:00+07', 2.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0004', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'C', FALSE, '2026-03-11 10:20:00+07', 2.00, TRUE),
     ('11111111-ffff-aaaa-bbbb-cccccccc0004', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Teks eksposisi memberikan informasi...', FALSE, '2026-03-11 10:35:00+07', NULL, NULL);
+
+-- Attempt 0008 (Bunga - BIN): all MC correct → score 88
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0008', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'B', FALSE, '2026-03-11 10:12:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0008', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'C', FALSE, '2026-03-11 10:22:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0008', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Teks eksposisi bertujuan informasi, argumentasi membujuk', FALSE, '2026-03-11 10:45:00+07', NULL, NULL);
+
+-- Attempt 0009 (Citra - BIN): 1 MC wrong + essay → score 70
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'A', FALSE, '2026-03-11 10:08:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'C', FALSE, '2026-03-11 10:18:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0009', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Eksposisi informatif, argumentasi persuasif', FALSE, '2026-03-11 10:28:00+07', NULL, NULL);
+
+-- Attempt 0010 (Dimas - BIN): 2 MC correct → score 62
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0010', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'B', FALSE, '2026-03-11 10:06:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0010', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'B', FALSE, '2026-03-11 10:16:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0010', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Eksposisi dan argumentasi berbeda tujuan', FALSE, '2026-03-11 10:40:00+07', NULL, NULL);
+
+-- Attempt 0011 (Eka - BIN): 1 MC correct → score 50
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'C', FALSE, '2026-03-11 10:10:00+07', 0.00, FALSE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'C', FALSE, '2026-03-11 10:15:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0011', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Eksposisi menjelaskan, argumentasi membujuk', FALSE, '2026-03-11 10:20:00+07', NULL, NULL);
+
+-- Attempt 0012 (Fajar - BIN): 2 MC correct → score 75
+INSERT INTO exam_answers (attempt_id, question_id, answer_value, is_flagged, answered_at, score, is_correct) VALUES
+    ('11111111-ffff-aaaa-bbbb-cccccccc0012', '11111111-bbbb-cccc-dddd-eeeeeeee0006', 'B', FALSE, '2026-03-11 10:10:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0012', '11111111-bbbb-cccc-dddd-eeeeeeee0007', 'C', FALSE, '2026-03-11 10:25:00+07', 2.00, TRUE),
+    ('11111111-ffff-aaaa-bbbb-cccccccc0012', '11111111-bbbb-cccc-dddd-eeeeeeee0008', 'Eksposisi untuk informasi, argumentasi untuk ajakan', FALSE, '2026-03-11 10:42:00+07', NULL, NULL);

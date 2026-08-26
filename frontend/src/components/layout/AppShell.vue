@@ -19,6 +19,7 @@ import {
   FileEdit,
   Trophy,
   Flag,
+  BarChart3,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
@@ -49,6 +50,7 @@ const navItems = computed(() => {
     items.push(
       { to: '/exams', label: 'Ujian', icon: ClipboardList },
       { to: '/question-banks', label: 'Bank Soal', icon: FileQuestion },
+      { to: '/laporan-ujian', label: 'Laporan Ujian', icon: BarChart3 },
       { to: '/question-reports', label: 'Laporan Soal', icon: Flag },
     )
   }

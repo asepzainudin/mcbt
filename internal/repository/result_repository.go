@@ -125,3 +125,123 @@ func (r *ResultRepository) GetExam(ctx context.Context, examID uuid.UUID) (*mode
 	}
 	return &e, nil
 }
+
+type ExamReportFilter struct {
+	ExamID         *uuid.UUID
+	SubjectID      *uuid.UUID
+	ClassID        *uuid.UUID
+	AcademicYearID *uuid.UUID
+	DateFrom       *string
+	DateTo         *string
+	Page           int
+	Limit          int
+}
+
+type ExamReportRow struct {
+	AttemptID    uuid.UUID  `json:"attempt_id"`
+	StudentID    uuid.UUID  `json:"student_id"`
+	StudentName  string     `json:"student_name"`
+	Nis          string     `json:"nis"`
+	ClassName    *string    `json:"class_name"`
+	ExamID       uuid.UUID  `json:"exam_id"`
+	ExamTitle    string     `json:"exam_title"`
+	SubjectName  string     `json:"subject_name"`
+	Score        *float64   `json:"score"`
+	PassingGrade float64    `json:"passing_grade"`
+	Passed       bool       `json:"passed"`
+	SubmittedAt  *time.Time `json:"submitted_at"`
+}
+
+type ExamReportPageResult struct {
+	Items      []ExamReportRow `json:"items"`
+	Total      int64           `json:"total"`
+	Page       int             `json:"page"`
+	Limit      int             `json:"limit"`
+	TotalPages int             `json:"total_pages"`
+}
+
+func (r *ResultRepository) ExamReport(ctx context.Context, f ExamReportFilter) (*ExamReportPageResult, error) {
+	base := r.db.WithContext(ctx).
+		Table("exam_attempts a").
+		Select(`
+			a.id          AS attempt_id,
+			a.student_id  AS student_id,
+			u.name        AS student_name,
+			s.nis         AS nis,
+			c.name        AS class_name,
+			e.id          AS exam_id,
+			e.title       AS exam_title,
+			sub.name      AS subject_name,
+			a.score       AS score,
+			e.passing_grade AS passing_grade,
+			a.submitted_at  AS submitted_at
+		`).
+		Joins("JOIN students s ON s.id = a.student_id").
+		Joins("JOIN users u ON u.id = s.user_id").
+		Joins("LEFT JOIN classes c ON c.id = s.class_id").
+		Joins("JOIN exams e ON e.id = a.exam_id").
+		Joins("JOIN subjects sub ON sub.id = e.subject_id").
+		Where("a.status = ? AND a.score IS NOT NULL", model.AttemptStatusSubmitted)
+
+	if f.ExamID != nil {
+		base = base.Where("a.exam_id = ?", *f.ExamID)
+	}
+	if f.SubjectID != nil {
+		base = base.Where("e.subject_id = ?", *f.SubjectID)
+	}
+	if f.ClassID != nil {
+		base = base.Where("s.class_id = ?", *f.ClassID)
+	}
+	if f.AcademicYearID != nil {
+		base = base.Where("e.academic_year_id = ?", *f.AcademicYearID)
+	}
+	if f.DateFrom != nil {
+		base = base.Where("a.submitted_at >= ?", *f.DateFrom)
+	}
+	if f.DateTo != nil {
+		base = base.Where("a.submitted_at < ?::date + interval '1 day'", *f.DateTo)
+	}
+
+	var total int64
+	if err := base.Session(&gorm.Session{}).Count(&total).Error; err != nil {
+		return nil, err
+	}
+
+	page := f.Page
+	if page < 1 {
+		page = 1
+	}
+	limit := f.Limit
+	if limit < 1 {
+		limit = 20
+	}
+	offset := (page - 1) * limit
+
+	var rows []ExamReportRow
+	err := base.
+		Order("a.submitted_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Scan(&rows).Error
+	if err != nil {
+		return nil, err
+	}
+
+	// compute passed
+	for i := range rows {
+		rows[i].Passed = rows[i].Score != nil && *rows[i].Score >= rows[i].PassingGrade
+	}
+
+	totalPages := int(total) / limit
+	if int(total)%limit > 0 {
+		totalPages++
+	}
+
+	return &ExamReportPageResult{
+		Items:      rows,
+		Total:      total,
+		Page:       page,
+		Limit:      limit,
+		TotalPages: totalPages,
+	}, nil
+}

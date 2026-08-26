@@ -160,6 +160,7 @@ type QuestionRepo interface {
 }
 
 type ResultRepo interface {
+	ExamReport(ctx context.Context, f repository.ExamReportFilter) (*repository.ExamReportPageResult, error)
 	ExamResults(ctx context.Context, examID uuid.UUID, classID *uuid.UUID) ([]repository.ExamResultRow, error)
 	SetResultsPublished(ctx context.Context, examID uuid.UUID, published bool) error
 	StudentResults(ctx context.Context, studentID uuid.UUID) ([]repository.StudentResultRow, error)
