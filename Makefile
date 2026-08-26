@@ -1,4 +1,4 @@
-.PHONY: help run build test lint fmt vet tidy migrate-up migrate-down migrate-status migrate-new db-drop-recreate
+.PHONY: help run build test lint fmt vet tidy migrate-up migrate-down migrate-status migrate-new migrate-fresh db-drop-recreate
 
 APP_NAME     := mcbt
 BUILD_DIR    := bin
@@ -17,6 +17,7 @@ help:
 	@echo "  make migrate-down     - revert last migration (steps=N for more)"
 	@echo "  make migrate-status   - show current migration version"
 	@echo "  make migrate-new NAME - create empty up/down migration files"
+	@echo "  make migrate-fresh   - drop DB, recreate, run all migrations + seed"
 
 run:
 	$(info Starting $(APP_NAME) API server...)
@@ -52,7 +53,12 @@ migrate-new:
 	@touch migrations/$(NEXT_SEQ)_$(NAME).up.sql migrations/$(NEXT_SEQ)_$(NAME).down.sql
 	@echo "created migrations/$(NEXT_SEQ)_$(NAME).up.sql and .down.sql"
 
+migrate-fresh: db-drop-recreate migrate-up
+	@echo "Database fresh-migrated with seed data"
+
 db-drop-recreate:
+	@echo "Terminating active connections to $(APP_NAME)..."
+	@docker exec postgres psql -U root -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='$(APP_NAME)' AND pid <> pg_backend_pid();" > /dev/null 2>&1 || true
 	@docker exec postgres psql -U root -c "DROP DATABASE IF EXISTS $(APP_NAME);" \
 		&& docker exec postgres psql -U root -c "CREATE DATABASE $(APP_NAME);" \
 		&& echo "database recreated"
