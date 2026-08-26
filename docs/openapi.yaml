@@ -1,0 +1,347 @@
+swagger: "2.0"
+info:
+  title: MCBT API — Computer-Based Test
+  description: |
+    REST API aplikasi ujian berbasis komputer (siswa, guru, admin).
+    Autentikasi memakai cookie HttpOnly `access_token` yang diterima setelah login,
+    dan header `X-CSRF-Token` (nilai dari cookie `csrf_token`) untuk metode tidak aman.
+  version: "1.0.0"
+basePath: /api/v1
+consumes:
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  cookieAuth:
+    type: apiKey
+    in: cookie
+    name: access_token
+  csrfHeader:
+    type: apiKey
+    in: header
+    name: X-CSRF-Token
+definitions:
+  Success:
+    type: object
+    properties:
+      success: { type: boolean, example: true }
+      message: { type: string }
+      data: { type: object }
+  Error:
+    type: object
+    properties:
+      success: { type: boolean, example: false }
+      message: { type: string }
+      errors:
+        type: object
+        additionalProperties: { type: string }
+parameters:
+  idParam:
+    name: id
+    in: path
+    required: true
+    type: string
+    format: uuid
+security:
+  - cookieAuth: []
+  - csrfHeader: []
+paths:
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      summary: Login, men-set cookie sesi
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [username, password]
+            properties:
+              username: { type: string }
+              password: { type: string }
+      responses:
+        200: { description: OK, schema: { $ref: "#/definitions/Success" } }
+        401: { description: Kredensial salah, schema: { $ref: "#/definitions/Error" } }
+  /auth/logout:
+    post: { tags: [Auth], summary: Hapus cookie sesi, responses: { 200: { description: OK } } }
+  /auth/refresh-token:
+    post: { tags: [Auth], summary: Rotasi access token via refresh cookie, responses: { 200: { description: OK } } }
+  /auth/me:
+    get: { tags: [Auth], summary: Profil user yang sedang login, responses: { 200: { description: OK } } }
+  /auth/profile:
+    get: { tags: [Auth], summary: Profil terperinci (NIS/kelas/NIP/telepon) }
+    put:
+      tags: [Auth]
+      summary: Perbarui nama & telepon sendiri
+      parameters:
+        - in: body
+          name: body
+          schema:
+            type: object
+            required: [name]
+            properties:
+              name: { type: string }
+              phone: { type: string }
+      responses: { 200: { description: OK } }
+  /auth/change-password:
+    put:
+      tags: [Auth]
+      summary: Ganti password sendiri
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [old_password, new_password, confirm_password]
+            properties:
+              old_password: { type: string }
+              new_password: { type: string, minLength: 8 }
+              confirm_password: { type: string }
+      responses: { 200: { description: OK }, 400: { description: Password lama salah } }
+
+  /academic-years:
+    get: { tags: [Master], summary: Daftar tahun ajaran }
+    post: { tags: [Master], summary: Buat tahun ajaran (admin) }
+  /classes:
+    get: { tags: [Master], summary: Daftar kelas }
+    post: { tags: [Master], summary: Buat kelas (admin) }
+  /subjects:
+    get: { tags: [Master], summary: Daftar mata pelajaran }
+    post: { tags: [Master], summary: Buat mapel (admin) }
+
+  /teachers:
+    get: { tags: [Guru], summary: Daftar guru (admin) }
+    post: { tags: [Guru], summary: Buat guru (admin) }
+  /teachers/import/template:
+    get: { tags: [Guru], summary: Template impor guru (xlsx) }
+  /teachers/{id}/reset-password:
+    post:
+      tags: [Guru]
+      summary: Ganti password guru — kosong = generate acak
+      parameters:
+        - $ref: "#/parameters/idParam"
+        - in: body
+          name: body
+          schema:
+            type: object
+            properties:
+              new_password: { type: string, minLength: 8 }
+      responses: { 200: { description: OK }, 422: { description: Validasi gagal } }
+
+  /students:
+    get: { tags: [Siswa], summary: Daftar siswa (admin + guru read-only) }
+    post: { tags: [Siswa], summary: Buat siswa (admin) }
+  /students/{id}/reset-password:
+    post:
+      tags: [Siswa]
+      summary: Ganti password siswa — kosong = generate acak
+      parameters:
+        - $ref: "#/parameters/idParam"
+        - in: body
+          name: body
+          schema:
+            type: object
+            properties:
+              new_password: { type: string, minLength: 8 }
+      responses: { 200: { description: OK } }
+
+  /question-banks:
+    get: { tags: [Bank Soal], summary: Daftar bank soal (semua staff; can_manage per baris) }
+    post: { tags: [Bank Soal], summary: Buat bank soal }
+  /question-banks/{id}:
+    put:
+      tags: [Bank Soal]
+      summary: Perbarui bank (hanya pemilik/admin)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK }, 403: { description: Bukan pemilik } }
+    delete:
+      tags: [Bank Soal]
+      summary: Hapus bank (hanya pemilik/admin)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 204: { description: Dihapus }, 403: { description: Bukan pemilik } }
+  /question-banks/{id}/questions:
+    post:
+      tags: [Bank Soal]
+      summary: Tambah soal ke bank
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 201: { description: Dibuat } }
+  /questions:
+    get: { tags: [Bank Soal], summary: Daftar soal (filter bank_id/search/type) }
+  /questions/{id}:
+    get: { tags: [Bank Soal], summary: Detail soal }
+    put: { tags: [Bank Soal], summary: Perbarui soal (pemilik bank) }
+    delete: { tags: [Bank Soal], summary: Hapus soal (pemilik bank) }
+
+  /exams:
+    get: { tags: [Ujian], summary: Daftar ujian (guru hanya buatannya) }
+    post:
+      tags: [Ujian]
+      summary: Buat ujian (bank soal dihubungkan lewat section)
+      parameters:
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [title, subject_id]
+            properties:
+              title: { type: string }
+              description: { type: string }
+              subject_id: { type: string, format: uuid }
+              academic_year_id: { type: string, format: uuid }
+      responses: { 201: { description: Dibuat } }
+  /exams/{id}/settings:
+    put:
+      tags: [Ujian]
+      summary: Pengaturan ujian (durasi, attempt, randomisasi, token, pembahasan…)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK } }
+  /exams/{id}/publish:
+    patch: { tags: [Ujian], summary: Publish ujian, parameters: [{ $ref: "#/parameters/idParam" }] }
+  /exams/{id}/close:
+    patch: { tags: [Ujian], summary: Tutup ujian, parameters: [{ $ref: "#/parameters/idParam" }] }
+  /exams/{id}/questions:
+    get:
+      tags: [Ujian]
+      summary: Review seluruh soal ujian per section (kunci + pembahasan)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK } }
+  /exams/{id}/sections:
+    get: { tags: [Section], summary: Daftar section, parameters: [{ $ref: "#/parameters/idParam" }] }
+    post: { tags: [Section], summary: Buat section, parameters: [{ $ref: "#/parameters/idParam" }] }
+  /sections/{id}/questions:
+    get: { tags: [Section], summary: Soal termapping pada section, parameters: [{ $ref: "#/parameters/idParam" }] }
+    post:
+      tags: [Section]
+      summary: Mapping soal dari banyak bank sekaligus
+      parameters:
+        - $ref: "#/parameters/idParam"
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [question_bank_ids]
+            properties:
+              question_bank_ids:
+                type: array
+                items: { type: string, format: uuid }
+              total_random_questions: { type: integer }
+
+  /exams/{id}/schedules:
+    post: { tags: [Peserta], summary: Buat jadwal + token, parameters: [{ $ref: "#/parameters/idParam" }] }
+  /exams/{id}/participants/assign-individual:
+    post: { tags: [Peserta], summary: Assign siswa individual, parameters: [{ $ref: "#/parameters/idParam" }] }
+
+  /candidate/exams:
+    get: { tags: [Ujian Siswa], summary: Daftar ujian untuk siswa login }
+  /candidate/exams/{exam_id}/start:
+    post:
+      tags: [Ujian Siswa]
+      summary: Mulai percobaan ujian (butuh token bila aktif)
+      parameters:
+        - name: exam_id
+          in: path
+          required: true
+          type: string
+          format: uuid
+      responses: { 201: { description: Attempt dibuat } }
+  /candidate/attempts/{id}/answers:
+    post:
+      tags: [Ujian Siswa]
+      summary: Simpan jawaban
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK } }
+  /candidate/attempts/{id}/submit:
+    post:
+      tags: [Ujian Siswa]
+      summary: Submit akhir (skor PG otomatis)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK } }
+  /candidate/attempts/{id}/discussion:
+    get:
+      tags: [Ujian Siswa]
+      summary: Pembahasan soal (aktif bila allow_discussion)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK }, 403: { description: Pembahasan nonaktif } }
+  /candidate/attempts/{attempt_id}/questions/{question_id}/report:
+    post:
+      tags: [Ujian Siswa]
+      summary: Lapor soal bermasalah
+      parameters:
+        - name: attempt_id
+          in: path
+          required: true
+          type: string
+          format: uuid
+        - name: question_id
+          in: path
+          required: true
+          type: string
+          format: uuid
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string }
+      responses: { 201: { description: Tersimpan } }
+  /candidate/results:
+    get: { tags: [Ujian Siswa], summary: Hasil ujian milik siswa }
+
+  /exams/{id}/results:
+    get:
+      tags: [Nilai]
+      summary: Rekap nilai + ranking (filter class_id opsional)
+      parameters: [{ $ref: "#/parameters/idParam" }]
+      responses: { 200: { description: OK } }
+  /exams/{id}/export:
+    get:
+      tags: [Ekspor]
+      summary: Ekspor rekap & ranking
+      produces: [application/octet-stream]
+      parameters:
+        - $ref: "#/parameters/idParam"
+        - name: format
+          in: query
+          type: string
+          enum: [xlsx, pdf]
+      responses: { 200: { description: File biner (attachment) } }
+  /export/students:
+    get: { tags: [Ekspor], summary: Ekspor daftar siswa (admin), produces: [application/octet-stream] }
+  /export/teachers:
+    get: { tags: [Ekspor], summary: Ekspor daftar guru (admin), produces: [application/octet-stream] }
+
+  /question-reports:
+    get: { tags: [Laporan], summary: Daftar laporan (filter status; guru = ujiannya sendiri) }
+  /question-reports/{id}/resolve:
+    patch:
+      tags: [Laporan]
+      summary: Tangani laporan
+      parameters:
+        - $ref: "#/parameters/idParam"
+        - in: body
+          name: body
+          required: true
+          schema:
+            type: object
+            required: [status]
+            properties:
+              status: { type: string, enum: [pending, reviewing, resolved, rejected] }
+              resolution: { type: string }
+      responses: { 200: { description: OK } }
+
+  /dashboard/admin:
+    get: { tags: [Dashboard], summary: Statistik ringkas admin }
+  /dashboard/teacher:
+    get: { tags: [Dashboard], summary: Statistik guru (scope miliknya) }
+  /dashboard/student:
+    get: { tags: [Dashboard], summary: Ringkasan ujian siswa }
+
+  /media/upload:
+    post: { tags: [Media], summary: Unggah gambar soal (multipart file), consumes: [multipart/form-data] }

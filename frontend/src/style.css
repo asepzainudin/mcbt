@@ -12,8 +12,8 @@
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
 
-  --primary: oklch(0.546 0.245 262.881);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #3d9be9;
+  --primary-foreground: #ffffff;
 
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -21,18 +21,18 @@
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
 
-  --accent: oklch(0.951 0.023 255.5);
-  --accent-foreground: oklch(0.379 0.146 265.522);
+  --accent: #eef2fb;
+  --accent-foreground: #274d76;
 
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.985 0 0);
 
-  --success: oklch(0.627 0.194 149.214);
+  --success: #2fbf83;
   --warning: oklch(0.769 0.188 70.08);
 
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.623 0.214 259.815);
+  --ring: #3d9be9;
 
   --radius: 0.625rem;
 }
@@ -47,8 +47,8 @@
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
 
-  --primary: oklch(0.623 0.214 259.815);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #58b0f2;
+  --primary-foreground: #06121f;
 
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
@@ -56,18 +56,18 @@
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
 
-  --accent: oklch(0.379 0.146 265.522);
-  --accent-foreground: oklch(0.882 0.059 254.128);
+  --accent: #23324d;
+  --accent-foreground: #cfe3f7;
 
   --destructive: oklch(0.704 0.191 22.216);
   --destructive-foreground: oklch(0.985 0 0);
 
-  --success: oklch(0.723 0.192 149.579);
+  --success: #2fbf83;
   --warning: oklch(0.828 0.189 84.429);
 
   --border: oklch(1 0 0 / 12%);
   --input: oklch(1 0 0 / 16%);
-  --ring: oklch(0.546 0.215 262.881);
+  --ring: #58b0f2;
 }
 
 @theme inline {
@@ -96,6 +96,23 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer utilities {
+  /* gradasi identitas dari logo */
+  .bg-brand-gradient {
+    background-image: linear-gradient(135deg, #34d399 0%, #3d9be9 48%, #8b5cf6 100%);
+  }
+  .text-brand-gradient {
+    background-image: linear-gradient(90deg, #34d399, #3d9be9, #8b5cf6);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  /* panel sidebar gelap bernuansa logo */
+  .bg-sidebar-gradient {
+    background-image: linear-gradient(168deg, #0d1526 0%, #12203c 55%, #1a1238 100%);
+  }
 }
 
 @layer base {

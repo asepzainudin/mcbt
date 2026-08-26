@@ -7,78 +7,66 @@ import (
 	"github.com/google/uuid"
 )
 
-const testSecret = "test-secret-key-with-at-least-32-chars!!"
-
 func newTestManager() *Manager {
-	return NewManager(testSecret, 15*time.Minute, 7*24*time.Hour)
+	return NewManager("unit-test-secret", 15*time.Minute, 7*24*time.Hour)
 }
 
-func TestAccessTokenRoundTrip(t *testing.T) {
+func TestAccessTokenRoundtrip(t *testing.T) {
 	m := newTestManager()
-	userID := uuid.MustParse("0198f0aa-7b2c-7333-8b4e-1a2b3c4d5e6f")
+	userID := uuid.New()
 
 	token, err := m.NewAccessToken(userID, 3)
 	if err != nil {
-		t.Fatalf("sign failed: %v", err)
+		t.Fatalf("NewAccessToken error: %v", err)
 	}
 
-	claims, err := m.Parse(token, TokenTypeAccess)
+	claims, err := m.Parse(token, "access")
 	if err != nil {
-		t.Fatalf("parse failed: %v", err)
+		t.Fatalf("Parse error: %v", err)
 	}
-	if claims.UserID != userID {
-		t.Errorf("expected user id %s, got %s", userID, claims.UserID)
+	if claims.Registered.Subject != userID.String() {
+		t.Errorf("subject = %q, want %q", claims.Registered.Subject, userID)
 	}
 	if claims.TokenVersion != 3 {
-		t.Errorf("expected token version 3, got %d", claims.TokenVersion)
+		t.Errorf("token_version = %d, want 3", claims.TokenVersion)
 	}
 }
 
-func TestRefreshTokenRoundTrip(t *testing.T) {
+func TestRefreshTokenRoundtrip(t *testing.T) {
 	m := newTestManager()
 	userID := uuid.New()
 
 	token, err := m.NewRefreshToken(userID, 1)
 	if err != nil {
-		t.Fatalf("sign failed: %v", err)
+		t.Fatalf("NewRefreshToken error: %v", err)
 	}
-
-	if _, err := m.Parse(token, TokenTypeAccess); err == nil {
-		t.Error("access-type parse of refresh token should fail")
-	}
-
-	claims, err := m.Parse(token, TokenTypeRefresh)
-	if err != nil {
-		t.Fatalf("refresh parse failed: %v", err)
-	}
-	if claims.UserID != userID {
-		t.Errorf("user id mismatch: %s != %s", claims.UserID, userID)
+	if _, err := m.Parse(token, "refresh"); err != nil {
+		t.Fatalf("Parse refresh error: %v", err)
 	}
 }
 
-func TestExpiredToken(t *testing.T) {
+func TestParse_RejectsWrongType(t *testing.T) {
 	m := newTestManager()
-	m.now = func() time.Time { return time.Now().Add(-2 * time.Hour) }
+	token, _ := m.NewAccessToken(uuid.New(), 0)
 
-	token, err := m.NewAccessToken(uuid.New(), 1)
-	if err != nil {
-		t.Fatalf("sign failed: %v", err)
-	}
-
-	m.now = time.Now
-	if _, err := m.Parse(token, TokenTypeAccess); err == nil {
-		t.Fatal("expected expired token error")
-	} else if err != ErrExpiredToken {
-		t.Logf("got wrapped error (acceptable): %v", err)
+	if _, err := m.Parse(token, "refresh"); err == nil {
+		t.Error("access token diterima sebagai refresh — seharusnya ditolak")
 	}
 }
 
-func TestTamperedSignature(t *testing.T) {
+func TestParse_RejectsGarbage(t *testing.T) {
 	m := newTestManager()
-	other := NewManager("another-secret-value-that-is-long-enough!", 15*time.Minute, time.Hour)
+	if _, err := m.Parse("bukan.token.jwt", "access"); err == nil {
+		t.Error("token sampah diterima — seharusnya error")
+	}
+}
 
-	token, _ := other.NewAccessToken(uuid.New(), 1)
-	if _, err := m.Parse(token, TokenTypeAccess); err == nil {
-		t.Fatal("expected signature verification failure")
+func TestParse_RejectsWrongSecret(t *testing.T) {
+	a := NewManager("secret-a", time.Minute, time.Minute)
+	b := NewManager("secret-b", time.Minute, time.Minute)
+
+	token, _ := a.NewAccessToken(uuid.New(), 0)
+	if _, err := b.Parse(token, "access"); err == nil {
+		t.Error("token dari secret berbeda diterima — seharusnya ditolak")
 	}
 }

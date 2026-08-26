@@ -65,6 +65,10 @@ func slugify(s string) string {
 		}
 	}
 	out := strings.Trim(b.String(), "-")
+	// rapikan pemisah beruntun ("--" → "-")
+	for strings.Contains(out, "--") {
+		out = strings.ReplaceAll(out, "--", "-")
+	}
 	if out == "" {
 		out = "data"
 	}

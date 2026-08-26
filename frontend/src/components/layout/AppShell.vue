@@ -19,13 +19,11 @@ import {
   FileEdit,
   Trophy,
   Flag,
-  UserRound,
 } from 'lucide-vue-next'
 import { ref } from 'vue'
 
 import { useAuthStore } from '../../stores/auth'
 import { useTheme } from '../../composables/useTheme'
-import BaseButton from '../ui/BaseButton.vue'
 import BaseBadge from '../ui/BaseBadge.vue'
 
 const auth = useAuthStore()
@@ -42,7 +40,6 @@ const isStaff = computed(() => isAdmin.value || isTeacher.value)
 const navItems = computed(() => {
   const items = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/profile', label: 'Profil', icon: UserRound },
   ]
   if (auth.user?.roles.includes('student')) {
     items.push({ to: '/candidate', label: 'Ujian Saya', icon: FileEdit })
@@ -110,19 +107,19 @@ function closeSidebar() {
 
     <aside
       :class="[
-        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-border bg-card transition-transform duration-200',
+        'fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r border-white/10 bg-sidebar-gradient text-slate-100 transition-transform duration-200',
         'md:static md:translate-x-0',
         sidebarOpen ? 'translate-x-0' : '-translate-x-full',
       ]"
     >
-      <div class="flex h-14 items-center justify-between border-b border-border px-4">
+      <div class="flex h-14 items-center justify-between border-b border-white/10 px-4">
         <router-link to="/" class="flex items-center gap-2.5" @click="closeSidebar">
-          <span class="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm">
+          <span class="flex size-8 items-center justify-center rounded-lg bg-brand-gradient text-white shadow-sm">
             <GraduationCap class="size-4.5" />
           </span>
-          <span class="text-lg font-bold tracking-tight">MCBT</span>
+          <span class="text-lg font-bold tracking-tight text-white">MCBT</span>
         </router-link>
-        <button class="text-muted-foreground hover:text-foreground md:hidden" @click="closeSidebar">
+        <button class="text-slate-400 hover:text-white md:hidden" @click="closeSidebar">
           <X class="size-5" />
         </button>
       </div>
@@ -135,8 +132,8 @@ function closeSidebar() {
           :class="[
             'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors [&_svg]:size-4',
             route.path === item.to
-              ? 'bg-primary/10 text-primary'
-              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                ? 'bg-brand-gradient text-white shadow-sm'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white',
           ]"
           @click="closeSidebar"
         >
@@ -145,7 +142,7 @@ function closeSidebar() {
         </router-link>
 
         <template v-if="masterDataItems.length > 0">
-          <p class="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          <p class="px-3 pb-1 pt-5 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
             Master Data
           </p>
           <router-link
@@ -155,8 +152,8 @@ function closeSidebar() {
             :class="[
               'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors [&_svg]:size-4',
               route.path === item.to
-                ? 'bg-primary/10 text-primary'
-                : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                ? 'bg-brand-gradient text-white shadow-sm'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white',
             ]"
             @click="closeSidebar"
           >
@@ -166,22 +163,29 @@ function closeSidebar() {
         </template>
       </nav>
 
-      <div class="border-t border-border p-3">
-        <div class="mb-2 flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+      <div class="border-t border-white/10 p-3">
+        <button
+          class="mb-2 flex w-full items-center gap-3 rounded-lg bg-white/10 p-3 text-left transition-colors hover:bg-white/20"
+          title="Profil Saya"
+          @click="router.push('/profile'); closeSidebar()"
+        >
           <span
-            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground"
+            class="flex size-9 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-xs font-bold text-white"
           >
             {{ initials }}
           </span>
-          <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">{{ auth.user?.name }}</p>
-            <p class="truncate text-xs text-muted-foreground">@{{ auth.user?.username }}</p>
-          </div>
-        </div>
-        <BaseButton variant="ghost" block @click="onLogout">
-          <LogOut />
+          <span class="min-w-0 flex-1">
+            <span class="block truncate text-sm font-medium text-white">{{ auth.user?.name }}</span>
+            <span class="block truncate text-xs text-slate-400">@{{ auth.user?.username }}</span>
+          </span>
+        </button>
+        <button
+          class="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
+          @click="onLogout"
+        >
+          <LogOut class="size-4" />
           Keluar
-        </BaseButton>
+        </button>
       </div>
     </aside>
 
@@ -206,6 +210,20 @@ function closeSidebar() {
           <BaseBadge v-for="role in auth.user?.roles ?? []" :key="role" tone="primary">
             {{ role }}
           </BaseBadge>
+          <button
+            class="flex items-center gap-2 rounded-full border border-border bg-card py-1 pl-1 pr-3 transition-colors hover:border-primary/40 hover:bg-accent"
+            title="Profil Saya"
+            @click="router.push('/profile')"
+          >
+            <span
+              class="flex size-7 shrink-0 items-center justify-center rounded-full bg-brand-gradient text-[11px] font-bold text-white"
+            >
+              {{ initials }}
+            </span>
+            <span class="hidden max-w-36 truncate text-sm font-medium sm:block">
+              {{ auth.user?.name }}
+            </span>
+          </button>
           <button
             class="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
             :aria-label="theme === 'dark' ? 'Mode terang' : 'Mode gelap'"
