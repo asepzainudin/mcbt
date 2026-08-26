@@ -169,6 +169,11 @@ Layanan yang aktif:
 
 Spesifikasi lengkap tersedia dalam format **Swagger/OpenAPI**: [`docs/openapi.yaml`](docs/openapi.yaml).
 
+**Playbook membangun dari nol**: [`docs/REBUILD_PLAYBOOK.md`](docs/REBUILD_PLAYBOOK.md) —
+langkah demi langkah (database, backend B1–B15, frontend F1–F12, infrastruktur, verifikasi)
+lengkap dengan endpoint & contoh respons. Versi PDF: `docs/rebuild-playbook.pdf`
+(regenerasi: `go run ./cmd/gendocs`).
+
 Ringkasan endpoint utama (`prefix /api/v1`):
 
 | Grup | Endpoint contoh |
